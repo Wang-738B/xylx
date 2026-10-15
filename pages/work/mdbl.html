@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>曼德勃罗特集 · 无限缩放探索器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070a10'/%3E%3Cg fill='none' stroke='%232dd4bf' stroke-width='2.2'%3E%3Ccircle cx='13' cy='16' r='5'/%3E%3Ccircle cx='20' cy='9' r='3.2'/%3E%3Ccircle cx='24' cy='17' r='2'/%3E%3Ccircle cx='20' cy='25' r='1.4'/%3E%3C/g%3E%3Ccircle cx='13' cy='16' r='1.4' fill='%2338bdf8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#070a10;
+    --panel:rgba(14,20,32,.86);
+    --panel-solid:#0e1420;
+    --panel-2:#131c2b;
+    --border:#1e2a3d;
+    --border-2:#2a3a52;
+    --text:#e6edf3;
+    --muted:#8fa3b8;
+    --muted-2:#5f7186;
+    --accent:#2dd4bf;
+    --accent-2:#38bdf8;
+    --warn:#fbbf24;
+    --mono:'JetBrains Mono','SF Mono','Cascadia Mono',Consolas,'Courier New',monospace;
+    --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  ::selection{background:rgba(45,212,191,.28)}
+
+  /* ===== Canvas ===== */
+  #stage{position:fixed;inset:0;display:block;width:100vw;height:100vh;touch-action:none;cursor:crosshair;background:
+    radial-gradient(120% 90% at 50% 10%, #0c1322 0%, #070a10 55%, #05070c 100%)}
+  #stage.dragging{cursor:grabbing}
+  #stage.loading{cursor:wait}
+
+  /* ===== 顶栏 ===== */
+  header{position:fixed;top:0;left:0;padding:16px 18px;z-index:30;pointer-events:none;user-select:none}
+  header .logo{display:flex;align-items:center;gap:10px}
+  header svg{flex:none}
+  header h1{font-size:15px;font-weight:700;letter-spacing:.02em;color:#f2f7fa}
+  header p{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+  header .brand-accent{color:var(--accent)}
+
+  /* ===== 面板 ===== */
+  .panel-toggle{position:fixed;top:14px;right:14px;z-index:40;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:border-color .15s,background .15s}
+  .panel-toggle:hover{border-color:var(--accent);background:var(--panel-solid)}
+  .panel-toggle svg{width:18px;height:18px}
+
+  aside#panel{position:fixed;top:0;right:0;bottom:0;width:324px;z-index:35;background:var(--panel);border-left:1px solid var(--border);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.22,1,.36,1);
+    box-shadow:-18px 0 40px rgba(0,0,0,.35)}
+  aside#panel.collapsed{transform:translateX(105%)}
+  #panel .panel-head{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  #panel .panel-head h2{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:none}
+  #panel .panel-body{flex:1;overflow-y:auto;padding:14px 18px 26px;scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
+  #panel .panel-body::-webkit-scrollbar{width:6px}
+  #panel .panel-body::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+
+  .section{margin-bottom:20px}
+  .section-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.14em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field label .val{font-family:var(--mono);color:var(--text);font-size:12px}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border-2);outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);
+    border:2px solid #06231f;cursor:pointer;transition:transform .1s}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid #06231f;cursor:pointer}
+
+  select{-webkit-appearance:none;appearance:none;width:100%;padding:8px 30px 8px 10px;background:var(--panel-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238fa3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12.5px;font-family:var(--sans);cursor:pointer}
+  select:hover{border-color:var(--border-2)}
+  select:focus-visible{outline:2px solid var(--accent)}
+
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .seg button{padding:8px 0;border:1px solid var(--border);background:var(--panel-2);color:var(--muted);border-radius:8px;font-size:12px;
+    font-family:var(--sans);cursor:pointer;transition:all .14s;white-space:nowrap}
+  .seg button:hover{color:var(--text);border-color:var(--border-2)}
+  .seg button.active{background:rgba(45,212,191,.14);border-color:var(--accent);color:var(--accent);font-weight:700}
+
+  .switch{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer;user-select:none}
+  .switch span{font-size:12px;color:var(--muted)}
+  .switch .track{width:34px;height:19px;border-radius:10px;background:var(--border-2);position:relative;transition:background .18s;flex:none}
+  .switch .track::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#c7d4e0;transition:transform .18s,background .18s}
+  .switch input{position:absolute;opacity:0;pointer-events:none}
+  .switch input:checked + .track{background:var(--accent)}
+  .switch input:checked + .track::after{transform:translateX(15px);background:#04211d}
+  .switch input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+
+  .btn{width:100%;padding:9px 0;border:1px solid var(--border);background:var(--panel-2);color:var(--text);border-radius:8px;font-size:12.5px;
+    font-family:var(--sans);cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:linear-gradient(135deg,rgba(45,212,191,.2),rgba(56,189,248,.14));border-color:rgba(45,212,191,.55);color:#bff5ec}
+  .btn.primary:hover{background:linear-gradient(135deg,rgba(45,212,191,.32),rgba(56,189,248,.22))}
+  .btn svg{width:14px;height:14px}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hidden{display:none !important}
+
+  .preset-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+
+  /* ===== 状态栏 ===== */
+  #statusbar{position:fixed;left:14px;bottom:14px;z-index:30;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:min(760px,calc(100vw - 150px));
+    pointer-events:none;user-select:none}
+  .chip{background:rgba(10,15,24,.78);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .chip b{color:var(--text);font-weight:500}
+  .chip .k{color:var(--muted-2)}
+  .chip .acc{color:var(--accent)}
+  .chip .warn{color:var(--warn)}
+  .chip .fps{color:var(--accent-2)}
+  #copyBtn{cursor:pointer;pointer-events:auto;border-color:var(--border-2);transition:border-color .15s,color .15s}
+  #copyBtn:hover{border-color:var(--accent);color:var(--accent)}
+  #copyBtn svg{width:11px;height:11px}
+
+  /* ===== 提示 & Toast ===== */
+  #hint{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:29;background:rgba(10,15,24,.8);border:1px solid var(--border);
+    color:var(--muted);font-size:11px;padding:6px 14px;border-radius:999px;backdrop-filter:blur(8px);pointer-events:none;transition:opacity .4s;white-space:nowrap}
+  #hint.fade{opacity:0}
+  #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-8px);z-index:60;background:var(--panel-solid);border:1px solid var(--border-2);
+    color:var(--text);font-size:12.5px;padding:9px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ===== 移动端 ===== */
+  @media (max-width:760px){
+    body{font-size:15px}
+    select{font-size:16px}
+    .seg button{font-size:13px}
+    .btn{font-size:13px}
+    .chip{font-size:12px}
+    .field label{font-size:13px}
+    header{padding:12px 14px}
+    header h1{font-size:13.5px}
+    aside#panel{width:100%;top:auto;right:0;bottom:0;max-height:52vh;border-left:none;border-top:1px solid var(--border);border-radius:16px 16px 0 0}
+    aside#panel.collapsed{transform:translateY(108%)}
+    .panel-toggle{top:12px;right:12px}
+    #statusbar{left:12px;right:12px;bottom:12px;max-width:none;pointer-events:none}
+    #copyBtn{pointer-events:auto}
+    #hint{top:56px}
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<header>
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="none" stroke="#1e2a3d"/>
+      <g fill="none" stroke="#2dd4bf" stroke-width="2.2">
+        <circle cx="13" cy="16" r="5"/>
+        <circle cx="20" cy="9" r="3.2"/>
+        <circle cx="24" cy="17" r="2"/>
+        <circle cx="20" cy="25" r="1.4"/>
+      </g>
+      <circle cx="13" cy="16" r="1.4" fill="#38bdf8"/>
+    </svg>
+    <div>
+      <h1>曼德勃罗特集 · <span class="brand-accent">无限缩放</span></h1>
+      <p>Mandelbrot Explorer</p>
+    </div>
+  </div>
+</header>
+
+<button class="panel-toggle" id="panelToggle" aria-label="切换控制面板" aria-expanded="true">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 7h16M4 12h16M4 17h10"/>
+  </svg>
+</button>
+
+<aside id="panel">
+  <div class="panel-head">
+    <h2>控制面板</h2>
+    <button class="btn" id="panelClose" style="width:auto;padding:4px 10px" aria-label="收起面板">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="panel-body">
+
+    <div class="section">
+      <div class="section-title">着色方式</div>
+      <div class="seg" id="colorSeg" role="tablist" aria-label="着色方式">
+        <button data-mode="smooth" class="active" role="tab" aria-selected="true">平滑</button>
+        <button data-mode="distance" role="tab" aria-selected="false">距离</button>
+        <button data-mode="trap" role="tab" aria-selected="false">陷阱</button>
+        <button data-mode="bands" role="tab" aria-selected="false">分带</button>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>调色板 <span class="val" id="paletteVal">经典</span></label>
+        <select id="palette" aria-label="调色板"></select>
+      </div>
+      <div class="field">
+        <label>色相偏移 <span class="val" id="shiftVal">0.00</span></label>
+        <input type="range" id="shift" min="0" max="1" step="0.005" value="0" aria-label="色相偏移">
+      </div>
+      <label class="switch" id="interiorSwitch">
+        <span>内部着色</span>
+        <input type="checkbox" id="interior" aria-label="内部着色">
+        <span class="track"></span>
+      </label>
+      <div class="field hidden" id="trapTypeField">
+        <label>陷阱形状 <span class="val" id="trapTypeVal">点</span></label>
+        <select id="trapType">
+          <option value="point">点</option>
+          <option value="circle">圆环</option>
+          <option value="line">直线</option>
+          <option value="cross">十字</option>
+        </select>
+      </div>
+      <div class="field hidden" id="trapPointField">
+        <label>陷阱位置 Re <span class="val" id="trapReVal">0.00</span></label>
+        <input type="range" id="trapRe" min="-1.5" max="1.5" step="0.01" value="0" aria-label="陷阱实部">
+        <label style="margin-top:8px">陷阱位置 Im <span class="val" id="trapImVal">0.00</span></label>
+        <input type="range" id="trapIm" min="-1.5" max="1.5" step="0.01" value="0" aria-label="陷阱虚部">
+      </div>
+      <div class="field hidden" id="trapCircleField">
+        <label>圆环半径 <span class="val" id="trapRVal">0.50</span></label>
+        <input type="range" id="trapR" min="0.05" max="1.5" step="0.01" value="0.5" aria-label="圆环半径">
+      </div>
+      <div class="field hidden" id="trapLineField">
+        <label>直线角度 <span class="val" id="trapLineVal">0°</span></label>
+        <input type="range" id="trapLine" min="0" max="180" step="1" value="0" aria-label="直线角度">
+      </div>
+      <div class="field hidden" id="bandWidthField">
+        <label>分带宽度 <span class="val" id="bandWidthVal">8</span></label>
+        <input type="range" id="bandWidth" min="2" max="64" step="1" value="8" aria-label="分带宽度">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">渲染</div>
+      <div class="field">
+        <label>最大迭代 <span class="val" id="iterVal">500</span></label>
+        <input type="range" id="maxIter" min="100" max="20000" step="50" value="500" aria-label="最大迭代">
+      </div>
+      <label class="switch" id="autoIterSwitch">
+        <span>深缩时自适应迭代</span>
+        <input type="checkbox" id="autoIter" checked aria-label="自适应迭代">
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <div class="section">
+      <div class="section-title">探索</div>
+      <label class="switch" id="juliaSwitch">
+        <span id="modeLabel">模式：曼德勃罗特</span>
+        <input type="checkbox" id="julia" aria-label="朱利亚集合">
+        <span class="track"></span>
+      </label>
+      <div class="field hidden" id="juliaFollowField">
+        <label class="switch" id="followSwitch">
+          <span>c 跟随光标</span>
+          <input type="checkbox" id="follow" checked aria-label="跟随光标">
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="field hidden" id="juliaReField">
+        <label>c 实部 <span class="val" id="juliaReVal">-0.800</span></label>
+        <input type="range" id="juliaRe" min="-2" max="2" step="0.001" value="-0.8" aria-label="朱利亚实部">
+      </div>
+      <div class="field hidden" id="juliaImField">
+        <label>c 虚部 <span class="val" id="juliaImVal">0.156</span></label>
+        <input type="range" id="juliaIm" min="-2" max="2" step="0.001" value="0.156" aria-label="朱利亚虚部">
+      </div>
+      <div class="preset-row" style="margin-top:12px">
+        <select id="preset" aria-label="探索预设">
+          <option value="home">初始视图</option>
+          <option value="seahorse">海马谷（知名）</option>
+          <option value="boundary">随机边界点</option>
+          <option value="deep">随机深景 ×1e24</option>
+          <option value="julia1">朱利亚：海马</option>
+          <option value="julia2">朱利亚：兔子</option>
+          <option value="julia3">朱利亚：树枝</option>
+        </select>
+        <button class="btn" id="goPreset" style="width:auto;padding:8px 16px">前往</button>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn" id="resetBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v5h5"/></svg>
+          重置视图
+        </button>
+        <button class="btn primary" id="exportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+          导出 PNG
+        </button>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<div id="statusbar">
+  <span class="chip"><span class="k">中心</span>&nbsp;<b id="statCenter">-0.5 + 0i</b></span>
+  <span class="chip"><span class="k">缩放</span>&nbsp;<b id="statZoom" class="acc">×1</b></span>
+  <span class="chip"><span class="k">迭代</span>&nbsp;<b id="statIter">500</b></span>
+  <span class="chip"><span class="k">精度</span>&nbsp;<b id="statPrec">30 位</b></span>
+  <span class="chip"><span class="k">渲染</span>&nbsp;<b id="statTime" class="fps">—</b></span>
+  <span class="chip" id="copyBtn" role="button" tabindex="0" aria-label="复制视图链接" title="复制视图链接">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    链接
+  </span>
+</div>
+<div id="hint">拖拽平移 · 滚轮 / 双击放大 · 触屏双指缩放 · 朱利亚模式可点击设定 c</div>
+<script id="shared-src">
+/* ===== 共享纯数学：BigInt 高精度定点数 + 视图变换 ===== */
+'use strict';
+var MB_MATH = (function () {
+  // 十进制字符串 -> 定点 BigInt（值 = v / 10^F）
+  function decToBig(str, F) {
+    var s = String(str).trim(), neg = false;
+    if (s[0] === '-') { neg = true; s = s.slice(1); }
+    if (s[0] === '+') s = s.slice(1);
+    var e = 0, ei = s.search(/[eE]/);
+    if (ei >= 0) { e = parseInt(s.slice(ei + 1), 10) || 0; s = s.slice(0, ei); }
+    var dot = s.indexOf('.');
+    var ip = dot < 0 ? s : s.slice(0, dot);
+    var fp = dot < 0 ? '' : s.slice(dot + 1);
+    var digits = ip + fp;
+    var pointPos = ip.length + e;
+    var intStr, fracStr;
+    if (pointPos <= 0) { intStr = '0'; fracStr = '0'.repeat(-pointPos) + digits; }
+    else if (pointPos >= digits.length) { intStr = digits + '0'.repeat(pointPos - digits.length); fracStr = ''; }
+    else { intStr = digits.slice(0, pointPos); fracStr = digits.slice(pointPos); }
+    var frac = (fracStr + '0'.repeat(F)).slice(0, F);
+    var v = BigInt(intStr || '0') * (10n ** BigInt(F)) + BigInt(frac || '0');
+    return neg ? -v : v;
+  }
+  // 定点 BigInt -> 十进制字符串（去掉尾部多余的 0）
+  function bigToDec(v, F) {
+    var neg = v < 0n; if (neg) v = -v;
+    var s = v.toString();
+    if (s.length <= F) s = '0'.repeat(F + 1 - s.length) + s;
+    var ip = s.slice(0, s.length - F) || '0';
+    var fp = s.slice(-F).replace(/0+$/, '');
+    return (neg ? '-' : '') + ip + (fp ? '.' + fp : '');
+  }
+  // 定点 BigInt -> double
+  function bigToDbl(v, F) { return Number(v) / Math.pow(10, F); }
+  function pow10(n) { return 10n ** BigInt(n); }
+
+  // 需要的定点位数：像素步长 ~ span/w，span = 4/zoom
+  function digitsNeeded(zoom, w) {
+    return Math.ceil(Math.log10((zoom * w) / 4)) + 20;
+  }
+  function adjustF(view, zoom, w) {
+    var need = Math.max(24, Math.min(240, digitsNeeded(zoom, w)));
+    var F = view.F;
+    if (need > F) {
+      var d = Math.min(Math.ceil((need - F) / 12) * 12, 240 - F);
+      if (d > 0) { var m = pow10(d); view.cx *= m; view.cy *= m; view.F += d; }
+    } else if (need < F - 36) {
+      var d2 = Math.floor((F - need) / 12) * 12;
+      if (d2 > 0 && F - d2 >= 24) { var m2 = pow10(d2); view.cx /= m2; view.cy /= m2; view.F -= d2; }
+    }
+  }
+
+  // 平移：dpx/dpy 为渲染像素（正值=向右/向下拖）
+  function panBy(view, dpx, dpy, w) {
+    var span = 4 / view.zoom, step = span / w;
+    var S = pow10(view.F);
+    var offRe = BigInt(Math.round(-dpx * step * Number(S)));
+    var offIm = BigInt(Math.round(dpy * step * Number(S)));
+    return { cx: view.cx + offRe, cy: view.cy + offIm, F: view.F, zoom: view.zoom };
+  }
+
+  // 缩放：保持光标下点不动；factor = 2^k；cxPx/cyPx 为渲染像素坐标
+  function zoomAt(view, factor, cxPx, cyPx, w, h) {
+    var span = 4 / view.zoom, step = span / w;
+    var offRe = (cxPx - (w - 1) / 2) * step;
+    var offIm = ((h - 1) / 2 - cyPx) * step;
+    var S = pow10(view.F);
+    var k = 1 - 1 / factor;
+    var ncx = view.cx + BigInt(Math.round(offRe * k * Number(S)));
+    var ncy = view.cy + BigInt(Math.round(offIm * k * Number(S)));
+    var nz = view.zoom * factor;
+    var out = { cx: ncx, cy: ncy, F: view.F, zoom: nz };
+    adjustF(out, nz, w);
+    return out;
+  }
+
+  // 建议迭代次数
+  function suggestIter(zoom) {
+    var s = Math.round(200 * Math.log10(Math.max(zoom, 1)));
+    return Math.max(150, Math.min(12000, s));
+  }
+
+  function formatZoom(z) {
+    if (z < 1e5) return (z >= 100 ? z.toFixed(0) : z.toFixed(2));
+    return z.toExponential(2);
+  }
+  function formatCenter(decStr) {
+    if (decStr.length > 26) return decStr.slice(0, 26) + '…';
+    return decStr;
+  }
+
+  return {
+    decToBig: decToBig, bigToDec: bigToDec, bigToDbl: bigToDbl,
+    panBy: panBy, zoomAt: zoomAt, suggestIter: suggestIter,
+    formatZoom: formatZoom, formatCenter: formatCenter, digitsNeeded: digitsNeeded
+  };
+})();
+</script>
+<script type="text/x-worker" id="worker-src">
+/* ===== Worker：曼德勃罗特/朱利亚渲染核心 =====
+   普通视图：双精度逐像素迭代
+   深缩放（像素步长 < 1e-12）：BigInt 定点参考轨道 + 微扰（perturbation）+ rebase，突破双精度极限
+*/
+'use strict';
+
+/* ---------- 调色板 ---------- */
+var PALETTES = {
+  classic: { name: '经典', stops: [[0,[6,10,34]],[0.18,[16,42,130]],[0.36,[10,122,196]],[0.52,[96,220,222]],[0.68,[255,242,160]],[0.84,[255,140,60]],[1,[240,60,44]]] },
+  fire:    { name: '火焰', stops: [[0,[8,8,10]],[0.22,[96,10,8]],[0.45,[220,66,12]],[0.68,[255,158,28]],[0.88,[255,236,150]],[1,[255,252,230]]] },
+  ocean:   { name: '海洋', stops: [[0,[2,14,28]],[0.25,[8,52,110]],[0.5,[18,132,172]],[0.72,[92,210,214]],[0.9,[190,244,236]],[1,[240,255,250]]] },
+  forest:  { name: '森林', stops: [[0,[4,14,8]],[0.3,[12,72,34]],[0.55,[46,150,60]],[0.78,[150,214,84]],[0.92,[230,246,140]],[1,[255,255,214]]] },
+  ice:     { name: '冰晶', stops: [[0,[6,10,26]],[0.3,[20,44,110]],[0.6,[96,140,216]],[0.82,[200,228,250]],[1,[250,252,255]]] },
+  psych:   { name: '迷幻', stops: [[0,[30,4,58]],[0.2,[150,26,180]],[0.4,[18,200,190]],[0.6,[250,224,60]],[0.8,[230,80,40]],[1,[30,4,58]]] },
+  mono:    { name: '单色', stops: [[0,[6,8,10]],[0.4,[46,52,60]],[0.75,[150,158,168]],[1,[240,244,248]]] },
+  rose:    { name: '玫瑰', stops: [[0,[24,4,16]],[0.28,[110,16,60]],[0.5,[214,60,110]],[0.72,[252,150,170]],[0.9,[255,216,214]],[1,[255,244,240]]] }
+};
+
+function samplePalette(stops, t) {
+  t = t - Math.floor(t);
+  var i = 1;
+  while (i < stops.length - 1 && stops[i][0] < t) i++;
+  var a = stops[i - 1], b = stops[i];
+  var span = b[0] - a[0]; if (!span) span = 1;
+  var f = (t - a[0]) / span;
+  var c = a[1], d = b[1];
+  return [c[0] + (d[0] - c[0]) * f, c[1] + (d[1] - c[1]) * f, c[2] + (d[2] - c[2]) * f];
+}
+function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+function smoothMu(n, z2) {
+  var zm = Math.sqrt(z2);
+  if (!isFinite(zm) || zm < 2) zm = 2;
+  var l = Math.log(zm) / Math.LN2; // log2(|z|)
+  if (l < 1) l = 1;
+  return n + 1 - (Math.log(l) / Math.LN2);
+}
+
+/* ---------- 深缩放参考轨道（BigInt 定点） ----------
+   z_{n+1} = z_n² + c；z0 为起始点、c 为迭代常量
+   mandel：z0 = 0，c = 中心点（像素 c = 中心 + 偏移）
+   julia ：z0 = 中心点，c = 朱利亚参数（像素 z0 = 中心 + 偏移） */
+function buildReference(z0Re, z0Im, cBigRe, cBigIm, F, maxIter) {
+  var S = 10n ** BigInt(F);
+  var S2 = S * S, bail = 4n * S2;
+  var refRe = new Float64Array(maxIter + 1);
+  var refIm = new Float64Array(maxIter + 1);
+  var zr = z0Re, zi = z0Im, esc = -1;
+  for (var n = 0; n <= maxIter; n++) {
+    refRe[n] = Number(zr) / Number(S);
+    refIm[n] = Number(zi) / Number(S);
+    var zr2 = zr * zr, zi2 = zi * zi;
+    if (zr2 + zi2 > bail) { esc = n; break; }
+    var zrzi = zr * zi;
+    zr = (zr2 - zi2) / S + cBigRe;
+    zi = (2n * zrzi) / S + cBigIm;
+  }
+  var cRe = Number(cBigRe) / Number(S), cIm = Number(cBigIm) / Number(S);
+  var sRe = Number(z0Re) / Number(S), sIm = Number(z0Im) / Number(S);
+  if (esc >= 0 && esc < maxIter) {
+    // 参考轨道逃逸后，用双精度继续填充（值已很大，精度无关紧要）
+    var ZRe = refRe[esc], ZIm = refIm[esc];
+    for (var m = esc + 1; m <= maxIter; m++) {
+      var nr = ZRe * ZRe - ZIm * ZIm + cRe;
+      var ni = 2 * ZRe * ZIm + cIm;
+      ZRe = nr; ZIm = ni;
+      refRe[m] = ZRe; refIm[m] = ZIm;
+    }
+  }
+  return { refRe: refRe, refIm: refIm, esc: esc, cRe: cRe, cIm: cIm, sRe: sRe, sIm: sIm };
+}
+
+/* ---------- 轨道陷阱 ---------- */
+function makeTrapFn(p) {
+  var t = p.trapType;
+  if (t === 'point') { var tx = p.trapRe || 0, ty = p.trapIm || 0; return function (a, b) { var dx = a - tx, dy = b - ty; return dx * dx + dy * dy; }; }
+  if (t === 'circle') { var r = p.trapR || 0.5; return function (a, b) { var d = Math.sqrt(a * a + b * b) - r; return d * d; }; }
+  if (t === 'line') { var th = (p.trapLine || 0) * Math.PI / 180, sn = Math.sin(th), cs = Math.cos(th); return function (a, b) { var d = a * sn - b * cs; return d * d; }; }
+  return function (a, b) { var ar = a < 0 ? -a : a, br = b < 0 ? -b : b; var m = ar < br ? ar : br; return m * m; };
+}
+
+/* ---------- 渲染一段行带 ---------- */
+function renderJob(p, y0, y1, out) {
+  var w = p.width, h = p.height, maxIter = p.maxIter;
+  var step = p.span / w;
+  var halfX = (w - 1) / 2, halfY = (h - 1) / 2;
+  var isJulia = p.mode === 'julia';
+  var deep = !!p.deep;
+  var pal = (PALETTES[p.palette] || PALETTES.classic).stops;
+  var coloring = p.coloring;
+  var bandW = p.bandWidth || 8;
+  var shift = p.shift || 0;
+  var interiorOn = !!p.interior;
+  var needDeriv = coloring === 'distance';
+  var trapFn = (coloring === 'trap') ? makeTrapFn(p) : null;
+
+  var jRe = p.juliaRe || 0, jIm = p.juliaIm || 0;
+  var ref = null, cRe0 = 0, cIm0 = 0, refCRe = 0, refCIm = 0;
+  if (deep) {
+    if (isJulia) {
+      var S = 10n ** BigInt(p.F);
+      var cJB = BigInt(Math.round(jRe * Number(S)));
+      var cJBi = BigInt(Math.round(jIm * Number(S)));
+      ref = buildReference(BigInt(p.cxStr), BigInt(p.cyStr), cJB, cJBi, p.F, maxIter);
+    } else {
+      ref = buildReference(0n, 0n, BigInt(p.cxStr), BigInt(p.cyStr), p.F, maxIter);
+    }
+    var Sd = Math.pow(10, p.F);
+    var ctrRe = Number(BigInt(p.cxStr)) / Sd;
+    var ctrIm = Number(BigInt(p.cyStr)) / Sd;
+    cRe0 = ctrRe - step * halfX;
+    cIm0 = ctrIm + step * halfY;
+    refCRe = ctrRe; refCIm = ctrIm;
+  } else {
+    cRe0 = p.cx - step * halfX;
+    cIm0 = p.cy + step * halfY;
+  }
+
+  for (var y = y0; y < y1; y++) {
+    var pixIm = cIm0 - y * step;
+    var rowBase = (y - y0) * w * 4;
+    for (var x = 0; x < w; x++) {
+      var pixRe = cRe0 + x * step;
+      var esc, zRe, zIm, z2, mu, minTrap = Infinity, wRe = 0, wIm = 0, w2 = 0;
+      var n, r, g, b;
+
+      if (deep) {
+        /* ===== 微扰深缩放 =====
+           参考轨道 Z_n（中心点的轨道），像素轨道 z_n = Z_n + d_n
+           mandel: d_0 = 0，推进 d' = 2Zd + d² + (pixel - center)
+           julia : d_0 = pixel - center（参考起点取中心点），推进 d' = 2Zd + d²（c 相同）
+           rebase：当 |z| < |Z| 时，改以 z 为新参考，直接双精度迭代 z' = z² + c_pixel */
+        var dcRe = pixRe - refCRe, dcIm = pixIm - refCIm;
+        var dRe = isJulia ? dcRe : 0, dIm = isJulia ? dcIm : 0;
+        var rebased = false;
+        var cpRe = isJulia ? jRe : pixRe, cpIm = isJulia ? jIm : pixIm;
+        zRe = 0; zIm = 0; esc = maxIter; mu = maxIter;
+        for (n = 0; n <= maxIter; n++) {
+          if (!rebased) {
+            var ZRe = ref.refRe[n], ZIm = ref.refIm[n];
+            zRe = ZRe + dRe; zIm = ZIm + dIm;
+            if (zRe * zRe + zIm * zIm < ZRe * ZRe + ZIm * ZIm) rebased = true;
+          }
+          z2 = zRe * zRe + zIm * zIm;
+          if (z2 > 4) { esc = n; mu = smoothMu(n, z2); break; }
+          if (n > 0 && trapFn) { var td = trapFn(zRe, zIm); if (td < minTrap) minTrap = td; }
+          if (needDeriv) {
+            var wnr = 2 * (zRe * wRe - zIm * wIm) + 1;
+            var wni = 2 * (zRe * wIm + zIm * wRe);
+            wRe = wnr; wIm = wni;
+          }
+          if (rebased) {
+            var nzr = zRe * zRe - zIm * zIm + cpRe;
+            var nzi = 2 * zRe * zIm + cpIm;
+            zRe = nzr; zIm = nzi;
+          } else if (n < maxIter) {
+            var ndr = 2 * (ZRe * dRe - ZIm * dIm) + (dRe * dRe - dIm * dIm);
+            var ndi = 2 * (ZRe * dIm + ZIm * dRe) + 2 * dRe * dIm;
+            if (!isJulia) { ndr += dcRe; ndi += dcIm; }
+            dRe = ndr; dIm = ndi;
+          }
+        }
+        w2 = wRe * wRe + wIm * wIm;
+      } else {
+        /* ===== 双精度模式 ===== */
+        esc = -1; zRe = 0; zIm = 0;
+        if (!isJulia && p.skipCardioid) {
+          var q = (pixRe - 0.25) * (pixRe - 0.25) + pixIm * pixIm;
+          if (q * (q + pixRe - 0.25) < 0.25 * pixIm * pixIm) { esc = maxIter; }
+          else {
+            var bx = pixRe + 1;
+            if (bx * bx + pixIm * pixIm < 0.0625) { esc = maxIter; }
+          }
+        }
+        if (esc === -1) {
+          var cstRe = isJulia ? jRe : pixRe, cstIm = isJulia ? jIm : pixIm;
+          for (n = 0; n <= maxIter; n++) {
+            if (needDeriv) {
+              var dnr = 2 * (zRe * wRe - zIm * wIm) + 1;
+              var dni = 2 * (zRe * wIm + zIm * wRe);
+              wRe = dnr; wIm = dni;
+            }
+            var nRe = zRe * zRe - zIm * zIm + cstRe;
+            var nIm = 2 * zRe * zIm + cstIm;
+            zRe = nRe; zIm = nIm;
+            z2 = zRe * zRe + zIm * zIm;
+            if (z2 > 4) { esc = n + 1; mu = smoothMu(n + 1, z2); break; }
+            if (trapFn) { var td2 = trapFn(zRe, zIm); if (td2 < minTrap) minTrap = td2; }
+          }
+          if (esc === -1) { esc = maxIter; mu = maxIter; }
+        } else { mu = maxIter; z2 = 0; }
+        w2 = wRe * wRe + wIm * wIm;
+      }
+
+      /* ===== 着色 ===== */
+      if (esc >= maxIter) {
+        if (interiorOn) {
+          var tInt = (n / maxIter + shift) % 1;
+          var ci = samplePalette(pal, tInt);
+          r = ci[0] * 0.5; g = ci[1] * 0.5; b = ci[2] * 0.5;
+        } else { r = 0; g = 0; b = 0; }
+      } else if (coloring === 'bands') {
+        var tb = (((esc - 1) % bandW) / bandW + shift) % 1;
+        var cb = samplePalette(pal, tb);
+        r = cb[0]; g = cb[1]; b = cb[2];
+      } else if (coloring === 'distance') {
+        var zmag = Math.sqrt(z2);
+        var logz = Math.log(zmag); if (logz < 0.69) logz = 0.69;
+        var dEst = 2 * zmag * logz / (Math.sqrt(w2) + 1e-30);
+        var px = dEst / step;
+        var f = Math.pow(clamp01(px * 0.9), 0.35);
+        var tD = (mu / maxIter + shift) % 1;
+        var cd = samplePalette(pal, tD);
+        var kd = 0.12 + 2.1 * f;
+        r = cd[0] * kd; g = cd[1] * kd; b = cd[2] * kd;
+      } else if (coloring === 'trap') {
+        if (!isFinite(minTrap)) { r = 0; g = 0; b = 0; }
+        else {
+          var dist = Math.sqrt(minTrap);
+          var tt = 1 - Math.exp(-dist / (step * 26));
+          var ct = samplePalette(pal, (tt * 0.85 + shift) % 1);
+          var kt = 0.08 + 2.4 * tt;
+          r = ct[0] * kt; g = ct[1] * kt; b = ct[2] * kt;
+        }
+      } else {
+        // smooth（直方图均衡化：mu/maxIter -> 归一化 t）
+        var tS;
+        if (p.normTable) {
+          var bi = (mu / maxIter * 256) | 0;
+          if (bi > 255) bi = 255;
+          tS = p.normTable[bi];
+        } else {
+          tS = Math.pow(clamp01(mu / maxIter), 0.75);
+        }
+        tS = (tS + shift) % 1;
+        var cs = samplePalette(pal, tS);
+        r = cs[0]; g = cs[1]; b = cs[2];
+      }
+
+      var o = rowBase + x * 4;
+      if (p.debug) {
+        // 测试通道：直接输出逃逸迭代次数
+        out[o] = esc & 255; out[o + 1] = (esc >> 8) & 255; out[o + 2] = 0; out[o + 3] = 255;
+        continue;
+      }
+      out[o] = r > 255 ? 255 : (r < 0 ? 0 : r);
+      out[o + 1] = g > 255 ? 255 : (g < 0 ? 0 : g);
+      out[o + 2] = b > 255 ? 255 : (b < 0 ? 0 : b);
+      out[o + 3] = 255;
+    }
+  }
+}
+
+self.onmessage = function (e) {
+  var p = e.data;
+  var h = p.y1 - p.y0;
+  var buf = new Uint8ClampedArray(h * p.width * 4);
+  renderJob(p, p.y0, p.y1, buf);
+  self.postMessage({ job: p.job, y0: p.y0, y1: p.y1, w: p.width, buf: buf }, [buf.buffer]);
+};
+</script>
+<script>
+/* ===== 主线程：UI、交互、渲染调度 ===== */
+(function () {
+'use strict';
+var $ = function (id) { return document.getElementById(id); };
+var canvas = $('stage'), ctx = canvas.getContext('2d');
+var viewW = 0, viewH = 0;
+
+/* ---------- 视图状态 ---------- */
+var state = {
+  cx: MB_MATH.decToBig('-0.5', 30), cy: MB_MATH.decToBig('0', 30), F: 30, zoom: 1,
+  mode: 'mandel', juliaRe: -0.8, juliaIm: 0.156, follow: true,
+  coloring: 'smooth', palette: 'classic', shift: 0, interior: false,
+  trapType: 'point', trapRe: 0, trapIm: 0, trapR: 0.5, trapLine: 0,
+  bandWidth: 8, maxIter: 500, autoIter: true
+};
+
+/* ---------- Worker 池 ---------- */
+var MAX_WORKERS = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1));
+var workers = [], renderToken = 0, currentJob = null;
+var normTable = null; // 平滑着色的直方图均衡化查找表
+
+function initWorkers() {
+  var el = $('worker-src');
+  var src = el.textContent;
+  var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  for (var i = 0; i < MAX_WORKERS; i++) {
+    var w = new Worker(url);
+    w.onmessage = onWorkerMsg;
+    w.onerror = function (e) { console.error('worker error', e.message); };
+    workers.push({ w: w, busy: false });
+  }
+}
+
+function buildParams(job, w, h, debug) {
+  var span = 4 / state.zoom;
+  var step = span / w;
+  var deep = step < 1e-12;
+  var p = {
+    job: job, width: w, height: h, span: span, maxIter: state.maxIter, mode: state.mode,
+    coloring: state.coloring, palette: state.palette, shift: state.shift, interior: state.interior,
+    trapType: state.trapType, trapRe: state.trapRe, trapIm: state.trapIm,
+    trapR: state.trapR, trapLine: state.trapLine, bandWidth: state.bandWidth,
+    juliaRe: state.juliaRe, juliaIm: state.juliaIm,
+    skipCardioid: !deep && state.mode === 'mandel',
+    cx: MB_MATH.bigToDbl(state.cx, state.F), cy: MB_MATH.bigToDbl(state.cy, state.F),
+    deep: deep, debug: !!debug
+  };
+  if (state.coloring === 'smooth' && normTable) p.normTable = normTable;
+  if (deep) { p.cxStr = state.cx.toString(); p.cyStr = state.cy.toString(); p.F = state.F; }
+  return p;
+}
+
+function renderNow() {
+  var token = ++renderToken;
+  var p = buildParams(token, viewW, viewH);
+  var job = {
+    token: token, p: p, done: 0, total: 0, chunks: [],
+    start: performance.now(), finished: false
+  };
+  var chunkRows = Math.max(8, Math.round(viewH / 32));
+  for (var y = 0; y < viewH; y += chunkRows) {
+    job.chunks.push({ y0: y, y1: Math.min(viewH, y + chunkRows) });
+  }
+  job.total = viewH;
+  currentJob = job;
+  canvas.classList.add('loading');
+  assignChunks(job);
+}
+
+function assignChunks(job) {
+  for (var i = 0; i < workers.length; i++) {
+    var wu = workers[i];
+    if (!wu.busy && job.chunks.length) {
+      var c = job.chunks.shift();
+      wu.busy = true;
+      wu.w.postMessage(Object.assign({}, job.p, { y0: c.y0, y1: c.y1 }));
+    }
+  }
+}
+
+function onWorkerMsg(e) {
+  var d = e.data;
+  var wu = null;
+  for (var i = 0; i < workers.length; i++) if (workers[i].w === e.target) { wu = workers[i]; break; }
+  if (!wu) return;
+  if (wu.probe) {
+    // 探针返回：从 esc 字节统计逃逸分布，构建均衡化查找表，再启动正式渲染
+    wu.probe = false; wu.busy = false;
+    buildNormFromProbe(d.buf);
+    renderNow();
+    return;
+  }
+  if (!currentJob || d.job !== currentJob.token) {
+    // 陈旧结果：释放该线程，并让它接手当前任务剩余的分块
+    wu.busy = false;
+    if (currentJob && currentJob.chunks.length) assignChunks(currentJob);
+    return;
+  }
+  var job = currentJob;
+  ctx.putImageData(new ImageData(d.buf, d.w), 0, d.y0);
+  job.done += (d.y1 - d.y0);
+  var pct = Math.round(job.done / job.total * 100);
+  if (pct < 100) $('statTime').textContent = '渲染 ' + pct + '%';
+  if (job.chunks.length) {
+    var c = job.chunks.shift();
+    wu.w.postMessage(Object.assign({}, job.p, { y0: c.y0, y1: c.y1 }));
+  } else {
+    wu.busy = false;
+    if (!job.finished && job.done >= job.total) {
+      job.finished = true;
+      var ms = performance.now() - job.start;
+      $('statTime').textContent = (ms / 1000).toFixed(2) + 's';
+      canvas.classList.remove('loading');
+      if (job.onDone) job.onDone(ms);
+    }
+  }
+}
+
+var renderTimer = null;
+function scheduleRender(delay) {
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(function () {
+    if (state.coloring === 'smooth') {
+      runProbeThenRender();
+    } else {
+      renderNow();
+    }
+  }, delay || 0);
+}
+
+/* 平滑着色：先用小图探针统计逃逸分布，构建全局均衡化查找表，再正式渲染 */
+function runProbeThenRender() {
+  var PW = 150, PH = 110;
+  var p = buildParams(++renderToken, PW, PH, true);
+  currentJob = null;
+  var wu = null;
+  for (var i = 0; i < workers.length; i++) if (!workers[i].busy) { wu = workers[i]; break; }
+  if (!wu) { renderNow(); return; } // 全忙时直接用旧表渲染
+  wu.busy = true; wu.probe = true;
+  wu.w.postMessage(Object.assign({}, p, { y0: 0, y1: PH }));
+}
+
+function buildNormFromProbe(buf) {
+  var maxIter = state.maxIter;
+  var hist = new Float64Array(256);
+  for (var i = 0; i < buf.length; i += 4) {
+    var esc = buf[i] | (buf[i + 1] << 8);
+    if (esc >= maxIter) continue; // 内部像素不入直方图
+    if (esc < 6) continue;         // 排除远场低迭代尖峰，保留经典"深背景亮边界"
+    var b = (esc / maxIter * 256) | 0;
+    if (b > 255) b = 255;
+    hist[b]++;
+  }
+  // CDF -> 归一化 t（gamma 0.6 抬高低频的高迭代细节）
+  var cdf = new Float64Array(256), acc = 0;
+  for (var k = 0; k < 256; k++) { acc += hist[k]; cdf[k] = acc; }
+  var lo = 0, hi = 255;
+  for (k = 0; k < 256; k++) if (cdf[k] > 0) { lo = k; break; }
+  for (k = 255; k >= 0; k--) if (cdf[k] < cdf[255]) { hi = k + 1; break; }
+  if (hi <= lo) hi = lo + 1;
+  var base = lo > 0 ? cdf[lo - 1] : 0;
+  var span = cdf[255] - base; if (span <= 0) span = 1;
+  var table = new Float32Array(256);
+  for (k = 0; k < 256; k++) {
+    var u = (cdf[k] - base) / span;
+    u = Math.pow(u < 0 ? 0 : (u > 1 ? 1 : u), 0.6);
+    table[k] = 0.02 + 0.98 * u;
+  }
+  normTable = table;
+}
+
+/* ---------- 画布尺寸 ---------- */
+function resize() {
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var w = Math.round(window.innerWidth * dpr), h = Math.round(window.innerHeight * dpr);
+  var cap = 1900000, area = w * h;
+  if (area > cap) { var s = Math.sqrt(cap / area); w = Math.round(w * s); h = Math.round(h * s); }
+  viewW = w; viewH = h;
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  scheduleRender();
+}
+var resizeTimer = null;
+window.addEventListener('resize', function () {
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resize, 180);
+});
+
+/* ---------- 状态栏 ---------- */
+function updateStatus() {
+  $('statZoom').textContent = '×' + MB_MATH.formatZoom(state.zoom);
+  $('statIter').textContent = state.maxIter;
+  $('statPrec').textContent = state.F + ' 位';
+  $('statCenter').textContent = centerDisplay();
+}
+function centerDisplay() {
+  var s = MB_MATH.bigToDec(state.cx, state.F);
+  return MB_MATH.formatCenter(s);
+}
+function hoverDisplay(px, py) {
+  // px/py 渲染像素 -> 复平面坐标（BigInt 级精度）
+  var span = 4 / state.zoom, step = span / viewW;
+  var offRe = (px - (viewW - 1) / 2) * step;
+  var offIm = ((viewH - 1) / 2 - py) * step;
+  var S = 10n ** BigInt(state.F);
+  var hx = state.cx + BigInt(Math.round(offRe * Number(S)));
+  var hy = state.cy + BigInt(Math.round(offIm * Number(S)));
+  return MB_MATH.formatCenter(MB_MATH.bigToDec(hx, state.F)) + ' ' + MB_MATH.formatCenter(MB_MATH.bigToDec(hy, state.F)) + 'i';
+}
+
+/* ---------- 视图变换 ---------- */
+function panByPixels(dx, dy) {
+  var v = MB_MATH.panBy(state, dx, dy, viewW);
+  state.cx = v.cx; state.cy = v.cy;
+}
+function zoomBy(factor, cxPx, cyPx) {
+  var nz = Math.min(Math.max(state.zoom * factor, 0.05), 1e200);
+  var f = nz / state.zoom;
+  if (f === 1) return;
+  var v = MB_MATH.zoomAt(state, f, cxPx, cyPx, viewW, viewH);
+  state.cx = v.cx; state.cy = v.cy; state.F = v.F; state.zoom = nz;
+  if (state.autoIter) {
+    var s = MB_MATH.suggestIter(nz);
+    if (s > state.maxIter) { state.maxIter = s; syncIterUI(); }
+  }
+  updateStatus(); syncHash(400); scheduleRender();
+}
+function resetView() {
+  state.cx = MB_MATH.decToBig('-0.5', 30); state.cy = MB_MATH.decToBig('0', 30);
+  state.F = 30; state.zoom = 1;
+  updateStatus(); syncHash(0); scheduleRender();
+}
+
+/* ---------- 指针交互 ---------- */
+var pointers = new Map();
+var dragStart = null, dragAccum = { x: 0, y: 0 }, pinch = null;
+var lastMoveT = 0;
+
+function clientToRender(cx, cy) {
+  return [cx * (viewW / canvas.clientWidth), cy * (viewH / canvas.clientHeight)];
+}
+
+canvas.addEventListener('pointerdown', function (e) {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1) {
+    dragStart = { x: e.clientX, y: e.clientY };
+    dragAccum = { x: 0, y: 0 };
+    canvas.classList.add('dragging');
+  } else if (pointers.size === 2) {
+    var pts = Array.from(pointers.values());
+    pinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
+  }
+});
+
+canvas.addEventListener('pointermove', function (e) {
+  var p = pointers.get(e.pointerId);
+  if (!p) return;
+  p.x = e.clientX; p.y = e.clientY;
+
+  if (pointers.size === 2 && pinch) {
+    var pts = Array.from(pointers.values());
+    var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    var mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+    var factor = d / pinch.d;
+    if (factor > 1.001 || factor < 0.999) {
+      var rp = clientToRender(mx, my);
+      var now = performance.now();
+      if (now - lastMoveT > 90) {
+        zoomBy(factor, rp[0], rp[1]);
+        lastMoveT = now;
+      }
+      pinch.d = d; pinch.mx = mx; pinch.my = my;
+    }
+    return;
+  }
+
+  if (pointers.size === 1 && dragStart && e.buttons & 1) {
+    var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    dragAccum = { x: dx, y: dy };
+    // 拖拽中实时平移画布位图（轻量预览）
+    var rp = clientToRender(dx, dy);
+    ctx.save();
+    ctx.globalCompositeOperation = 'copy';
+    ctx.drawImage(canvas, rp[0], rp[1]);
+    ctx.restore();
+    return;
+  }
+
+  // 悬停：坐标显示 / 朱利亚跟随
+  if (pointers.size === 0) {
+    var rp2 = clientToRender(e.clientX, e.clientY);
+    $('statCenter').textContent = hoverDisplay(rp2[0], rp2[1]);
+    if (state.mode === 'julia' && state.follow) {
+      var span2 = 4 / state.zoom, step2 = span2 / viewW;
+      var hr = MB_MATH.bigToDbl(state.cx, state.F) + (rp2[0] - (viewW - 1) / 2) * step2;
+      var hi = MB_MATH.bigToDbl(state.cy, state.F) + ((viewH - 1) / 2 - rp2[1]) * step2;
+      hr = Math.max(-2, Math.min(2, hr)); hi = Math.max(-2, Math.min(2, hi));
+      state.juliaRe = hr; state.juliaIm = hi;
+      scheduleRender(60);
+    }
+  }
+});
+
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pointers.size === 0) {
+    canvas.classList.remove('dragging');
+    if (dragStart && (Math.abs(dragAccum.x) > 3 || Math.abs(dragAccum.y) > 3)) {
+      var rp = clientToRender(dragAccum.x, dragAccum.y);
+      panByPixels(rp[0], rp[1]);
+      updateStatus(); syncHash(400); scheduleRender();
+    } else if (dragStart && state.mode === 'julia' && !state.follow) {
+      // 点击设定 c
+      var rp2 = clientToRender(dragStart.x, dragStart.y);
+      var span2 = 4 / state.zoom, step2 = span2 / viewW;
+      var hr = MB_MATH.bigToDbl(state.cx, state.F) + (rp2[0] - (viewW - 1) / 2) * step2;
+      var hi = MB_MATH.bigToDbl(state.cy, state.F) + ((viewH - 1) / 2 - rp2[1]) * step2;
+      state.juliaRe = Math.max(-2, Math.min(2, hr));
+      state.juliaIm = Math.max(-2, Math.min(2, hi));
+      scheduleRender();
+    }
+    dragStart = null; pinch = null;
+  } else if (pointers.size === 1) {
+    pinch = null;
+    dragStart = null;
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+canvas.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  var k = Math.max(-4, Math.min(4, Math.round(-e.deltaY / 100)));
+  if (!k) return;
+  var rp = clientToRender(e.clientX, e.clientY);
+  zoomBy(Math.pow(2, k), rp[0], rp[1]);
+}, { passive: false });
+
+canvas.addEventListener('dblclick', function (e) {
+  var rp = clientToRender(e.clientX, e.clientY);
+  zoomBy(2, rp[0], rp[1]);
+});
+
+canvas.addEventListener('mouseleave', function () {
+  $('statCenter').textContent = centerDisplay();
+});
+
+window.addEventListener('keydown', function (e) {
+  var vw = viewW, vh = viewH;
+  var t = e.key;
+  if (t === 'ArrowLeft') { panByPixels(-vw * 0.12, 0); }
+  else if (t === 'ArrowRight') { panByPixels(vw * 0.12, 0); }
+  else if (t === 'ArrowUp') { panByPixels(0, -vh * 0.12); }
+  else if (t === 'ArrowDown') { panByPixels(0, vh * 0.12); }
+  else if (t === '+' || t === '=') { zoomBy(2, vw / 2, vh / 2); }
+  else if (t === '-' || t === '_') { zoomBy(0.5, vw / 2, vh / 2); }
+  else if (t === '0' || t === 'r' || t === 'R') { resetView(); }
+  else return;
+  e.preventDefault();
+  updateStatus(); syncHash(400); scheduleRender();
+});
+
+/* ---------- 控制面板 ---------- */
+var PALETTE_LABELS = { classic: '经典', fire: '火焰', ocean: '海洋', forest: '森林', ice: '冰晶', psych: '迷幻', mono: '单色', rose: '玫瑰' };
+
+function initPanel() {
+  var sel = $('palette');
+  for (var k in PALETTE_LABELS) {
+    var opt = document.createElement('option');
+    opt.value = k; opt.textContent = PALETTE_LABELS[k];
+    sel.appendChild(opt);
+  }
+  sel.value = state.palette;
+
+  // 着色方式
+  var seg = $('colorSeg');
+  seg.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var m = btn.dataset.mode;
+    if (m === state.coloring) return;
+    state.coloring = m;
+    seg.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+    toggleColorFields();
+    scheduleRender();
+  });
+  toggleColorFields();
+
+  $('palette').addEventListener('change', function () { state.palette = this.value; $('paletteVal').textContent = PALETTE_LABELS[this.value]; scheduleRender(); });
+  bindRange('shift', function (v) { state.shift = parseFloat(v); $('shiftVal').textContent = (+v).toFixed(2); }, true);
+  $('interior').addEventListener('change', function () { state.interior = this.checked; scheduleRender(); });
+
+  $('trapType').addEventListener('change', function () {
+    state.trapType = this.value;
+    $('trapTypeVal').textContent = { point: '点', circle: '圆环', line: '直线', cross: '十字' }[this.value];
+    toggleTrapFields();
+    scheduleRender();
+  });
+  bindRange('trapRe', function (v) { state.trapRe = parseFloat(v); $('trapReVal').textContent = (+v).toFixed(2); }, true);
+  bindRange('trapIm', function (v) { state.trapIm = parseFloat(v); $('trapImVal').textContent = (+v).toFixed(2); }, true);
+  bindRange('trapR', function (v) { state.trapR = parseFloat(v); $('trapRVal').textContent = (+v).toFixed(2); }, true);
+  bindRange('trapLine', function (v) { state.trapLine = parseInt(v, 10); $('trapLineVal').textContent = v + '°'; }, true);
+  bindRange('bandWidth', function (v) { state.bandWidth = parseInt(v, 10); $('bandWidthVal').textContent = v; }, true);
+
+  bindRange('maxIter', function (v) { state.maxIter = parseInt(v, 10); $('iterVal').textContent = state.maxIter; }, false);
+  $('autoIter').addEventListener('change', function () { state.autoIter = this.checked; });
+
+  $('julia').addEventListener('change', function () {
+    state.mode = this.checked ? 'julia' : 'mandel';
+    $('modeLabel').textContent = state.mode === 'julia' ? '模式：朱利亚集合' : '模式：曼德勃罗特';
+    toggleJuliaFields();
+    scheduleRender();
+  });
+  $('follow').addEventListener('change', function () { state.follow = this.checked; toggleJuliaFields(); scheduleRender(); });
+  bindRange('juliaRe', function (v) { state.juliaRe = parseFloat(v); $('juliaReVal').textContent = (+v).toFixed(3); }, true);
+  bindRange('juliaIm', function (v) { state.juliaIm = parseFloat(v); $('juliaImVal').textContent = (+v).toFixed(3); }, true);
+
+  $('resetBtn').addEventListener('click', resetView);
+  $('exportBtn').addEventListener('click', exportPNG);
+  $('goPreset').addEventListener('click', goPreset);
+
+  $('panelToggle').addEventListener('click', togglePanel);
+  $('panelClose').addEventListener('click', togglePanel);
+
+  $('copyBtn').addEventListener('click', copyLink);
+  $('copyBtn').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyLink(); } });
+
+  toggleTrapFields(); toggleJuliaFields();
+}
+
+function toggleColorFields() {
+  var m = state.coloring;
+  $('trapTypeField').classList.toggle('hidden', m !== 'trap');
+  $('bandWidthField').classList.toggle('hidden', m !== 'bands');
+  toggleTrapFields();
+}
+function toggleTrapFields() {
+  var on = state.coloring === 'trap';
+  $('trapPointField').classList.toggle('hidden', !on || state.trapType !== 'point');
+  $('trapCircleField').classList.toggle('hidden', !on || state.trapType !== 'circle');
+  $('trapLineField').classList.toggle('hidden', !on || state.trapType !== 'line');
+}
+function toggleJuliaFields() {
+  var on = state.mode === 'julia';
+  $('juliaFollowField').classList.toggle('hidden', !on);
+  var showC = on && !state.follow;
+  $('juliaReField').classList.toggle('hidden', !showC);
+  $('juliaImField').classList.toggle('hidden', !showC);
+  $('modeLabel').textContent = on ? '模式：朱利亚集合' : '模式：曼德勃罗特';
+}
+function bindRange(id, fn, debounce) {
+  var el = $(id);
+  el.addEventListener('input', function () {
+    if (fn) fn(el.value);
+    if (debounce) scheduleRender(120); else scheduleRender();
+  });
+}
+function syncIterUI() { $('maxIter').value = state.maxIter; $('iterVal').textContent = state.maxIter; }
+
+function togglePanel() {
+  var collapsed = $('panel').classList.toggle('collapsed');
+  $('panelToggle').setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+
+/* ---------- 预设 ---------- */
+function escapes(c, n) {
+  var zr = 0, zi = 0;
+  for (var i = 0; i < n; i++) {
+    var nr = zr * zr - zi * zi + c[0], ni = 2 * zr * zi + c[1];
+    zr = nr; zi = ni;
+    if (zr * zr + zi * zi > 4) return true;
+  }
+  return false;
+}
+function randomBoundary(deepZoom) {
+  for (var tries = 0; tries < 60; tries++) {
+    var ang = Math.random() * Math.PI * 2;
+    var c = [Math.random() * 1.5 * Math.cos(ang), Math.random() * 1.5 * Math.sin(ang)];
+    if (!escapes(c, 250)) continue;
+    var lo = 0, hi = 1;
+    for (var i = 0; i < 70; i++) {
+      var m = (lo + hi) / 2;
+      if (escapes([c[0] * m, c[1] * m], 250)) hi = m; else lo = m;
+    }
+    var p = [c[0] * hi, c[1] * hi];
+    if (Math.abs(p[0]) < 1.6 && Math.abs(p[1]) < 1.2) {
+      return { cx: p[0], cy: p[1], zoom: deepZoom ? 1e24 : 1e5 };
+    }
+  }
+  return { cx: -0.743643887037151, cy: 0.131825904205330, zoom: 1e5 };
+}
+function goPreset() {
+  var v = $('preset').value;
+  if (v === 'home') { resetView(); return; }
+  if (v === 'seahorse') {
+    state.cx = MB_MATH.decToBig('-0.743643887037151', 40);
+    state.cy = MB_MATH.decToBig('0.131825904205330', 40);
+    state.F = 40; state.zoom = 2e6; state.mode = 'mandel';
+  } else if (v === 'boundary') {
+    var b = randomBoundary(false);
+    state.cx = MB_MATH.decToBig(b.cx.toPrecision(18), 40);
+    state.cy = MB_MATH.decToBig(b.cy.toPrecision(18), 40);
+    state.F = 40; state.zoom = b.zoom; state.mode = 'mandel';
+  } else if (v === 'deep') {
+    var d = randomBoundary(true);
+    state.cx = MB_MATH.decToBig(d.cx.toPrecision(18), 60);
+    state.cy = MB_MATH.decToBig(d.cy.toPrecision(18), 60);
+    state.F = 60; state.zoom = d.zoom; state.mode = 'mandel';
+  } else {
+    var jc = v === 'julia1' ? [-0.8, 0.156] : (v === 'julia2' ? [-0.1226, 0.7449] : [0, 1]);
+    state.juliaRe = jc[0]; state.juliaIm = jc[1];
+    state.mode = 'julia'; state.follow = false;
+    state.cx = MB_MATH.decToBig('-0.5', 30); state.cy = MB_MATH.decToBig('0', 30); state.F = 30; state.zoom = 1;
+    $('follow').checked = false;
+    toggleJuliaFields();
+  }
+  syncJuliaUI();
+  $('julia').checked = state.mode === 'julia';
+  $('modeLabel').textContent = state.mode === 'julia' ? '模式：朱利亚集合' : '模式：曼德勃罗特';
+  if (state.autoIter) { state.maxIter = Math.max(state.maxIter, MB_MATH.suggestIter(state.zoom)); syncIterUI(); }
+  updateStatus(); syncHash(0); scheduleRender();
+}
+function syncJuliaUI() {
+  $('juliaRe').value = state.juliaRe; $('juliaIm').value = state.juliaIm;
+  $('juliaReVal').textContent = state.juliaRe.toFixed(3);
+  $('juliaImVal').textContent = state.juliaIm.toFixed(3);
+  $('follow').checked = state.follow;
+}
+
+/* ---------- 导出 PNG ---------- */
+function exportPNG() {
+  var scale = Math.min(2, 3840 / Math.max(viewW, viewH));
+  var ew = Math.max(800, Math.round(viewW * scale));
+  var eh = Math.max(600, Math.round(viewH * scale));
+  var area = ew * eh;
+  if (area > 6000000) { var s2 = Math.sqrt(6000000 / area); ew = Math.round(ew * s2); eh = Math.round(eh * s2); }
+  var p = buildParams(++renderToken, ew, eh);
+  renderToken++;
+  var off = document.createElement('canvas');
+  off.width = ew; off.height = eh;
+  var octx = off.getContext('2d');
+  var img = octx.createImageData(ew, eh);
+  var chunks = [];
+  var cr = Math.max(12, Math.round(eh / 24));
+  for (var y = 0; y < eh; y += cr) chunks.push({ y0: y, y1: Math.min(eh, y + cr) });
+  var done = 0;
+  showToast('导出渲染中…');
+  var assignNext = function () {
+    for (var i = 0; i < workers.length; i++) {
+      var wu = workers[i];
+      if (!wu.busy && chunks.length) {
+        var c = chunks.shift();
+        wu.busy = true;
+        wu.w.postMessage(Object.assign({}, p, { y0: c.y0, y1: c.y1 }));
+      }
+    }
+  };
+  var savedHandler = onWorkerMsg;
+  onWorkerMsg = function (e) {
+    var d = e.data;
+    if (d.job !== p.job) { savedHandler(e); return; }
+    var wu = null;
+    for (var i = 0; i < workers.length; i++) if (workers[i].w === e.target) { wu = workers[i]; break; }
+    if (!wu) return;
+    img.data.set(d.buf, d.y0 * ew * 4);
+    done += (d.y1 - d.y0);
+    if (chunks.length) {
+      var c = chunks.shift();
+      wu.w.postMessage(Object.assign({}, p, { y0: c.y0, y1: c.y1 }));
+    } else {
+      wu.busy = false;
+      if (done >= eh) {
+        onWorkerMsg = savedHandler;
+        octx.putImageData(img, 0, 0);
+        var zoomStr = MB_MATH.formatZoom(state.zoom).replace(/×|\./g, '').replace(/e\+?/, 'e');
+        off.toBlob(function (blob) {
+          if (!blob) { showToast('导出失败'); return; }
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'mandelbrot_zoom' + zoomStr + '.png';
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+          showToast('已导出 PNG');
+          renderNow();
+        }, 'image/png');
+      }
+    }
+  };
+  assignNext();
+}
+
+/* ---------- URL 状态 / 复制 ---------- */
+var hashTimer = null;
+function syncHash(delay) {
+  if (hashTimer) clearTimeout(hashTimer);
+  hashTimer = setTimeout(function () {
+    var h = '#' + state.cx.toString() + ',' + state.cy.toString() + ',' + state.F + ',' + state.zoom.toExponential(6);
+    history.replaceState(null, '', h);
+  }, delay);
+}
+function loadHash() {
+  var h = location.hash;
+  if (!h || h.length < 8) return;
+  try {
+    var parts = h.slice(1).split(',');
+    if (parts.length !== 4) return;
+    var cx = BigInt(parts[0]), cy = BigInt(parts[1]);
+    var F = parseInt(parts[2], 10), zoom = parseFloat(parts[3]);
+    if (!isFinite(zoom) || zoom < 0.05 || zoom > 1e200 || F < 24 || F > 240) return;
+    state.cx = cx; state.cy = cy; state.F = F; state.zoom = zoom;
+    if (state.autoIter) { state.maxIter = Math.max(state.maxIter, MB_MATH.suggestIter(zoom)); syncIterUI(); }
+  } catch (err) { /* 无效 hash 忽略 */ }
+}
+function copyLink() {
+  var url = location.href.split('#')[0] + '#' + state.cx.toString() + ',' + state.cy.toString() + ',' + state.F + ',' + state.zoom.toExponential(6);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function () { showToast('视图链接已复制'); }, function () { window.prompt('复制链接', url); });
+  } else {
+    window.prompt('复制链接', url);
+  }
+}
+
+/* ---------- Toast / Hint ---------- */
+var toastTimer = null;
+function showToast(msg) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+/* ---------- 启动 ---------- */
+if (window.matchMedia && window.matchMedia('(max-width:760px)').matches) {
+  $('panel').classList.add('collapsed');
+  $('panelToggle').setAttribute('aria-expanded', 'false');
+}
+initPanel();
+initWorkers();
+loadHash();
+updateStatus();
+$('statCenter').textContent = centerDisplay();
+resize();
+setTimeout(function () { $('hint').classList.add('fade'); }, 7000);
+})();
+</script>
+</body>
+</html>
