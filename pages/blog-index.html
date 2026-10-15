@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人博客 | xyLX·Wang</title>
+    <meta name="description" content="xyLX·Wang 的个人博客：记录生活日常与计算机技术学习">
+    <meta name="keywords" content="xyLX·Wang,个人博客,技术博客,计算机,建站,硬解软解,VGA">
+    <meta name="author" content="xyLX·Wang">
+    <meta name="theme-color" content="#f7f1e3">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="个人博客 | xyLX·Wang">
+    <meta property="og:description" content="记录生活与技术的数字花园">
+    <meta property="og:image" content="../image/index-background.jpg">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="../image/index-icon.png">
+    <link rel="preload" href="../image/index-background.jpg" as="image">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "xyLX·Wang 的个人博客",
+        "description": "记录生活与技术的数字花园",
+        "blogPost": [
+            { "@type": "BlogPosting", "headline": "我的个人网站成立了", "datePublished": "2026-08-21", "url": "./blogs/b001.html" },
+            { "@type": "BlogPosting", "headline": "呜呜，明天就要报道了", "datePublished": "2026-08-30", "url": "./blogs/b002.html" },
+            { "@type": "BlogPosting", "headline": "关于极域UDP攻击（作者曾亲身经历）", "datePublished": "2026-08-30", "url": "./blogs/b003.html" },
+            { "@type": "BlogPosting", "headline": "关于硬解与软解", "datePublished": "2026-09-04", "url": "./blogs/b004.html" },
+            { "@type": "BlogPosting", "headline": "关于VGA", "datePublished": "2026-09-04", "url": "./blogs/b005.html" },
+	    { "@type": "BlogPosting", "headline": "Android中的奇怪时间BUG", "datePublished": "2026-10-05", "url": "./blogs/b006.html" }
+        ]
+    }
+    </script>
+    <script>
+        /* 主题预加载：避免明暗主题闪烁 */
+        (function () {
+            try {
+                var saved = localStorage.getItem("siteTheme");
+                var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) { }
+        })();
+    </script>
+    <style>
+        /* ============ 主题变量（金色系，延续站点视觉语汇） ============ */
+        :root {
+            --ink: #4a3d28;
+            --ink-soft: #7a6a4d;
+            --gold: #946c22;
+            --gold-deep: #7a5a1e;
+            --gold-soft: #b39862;
+            --gold-pale: rgba(179, 152, 98, 0.30);
+            --card-bg: rgba(255, 255, 255, 0.55);
+            --card-bg-hover: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(180, 150, 90, 0.35);
+            --glass: rgba(255, 255, 255, 0.40);
+            --chip-bg: rgba(255, 255, 255, 0.35);
+            --mark-bg: rgba(244, 200, 78, 0.42);
+            --shadow: 0 10px 34px rgba(90, 70, 30, 0.14);
+            --ring: rgba(148, 108, 34, 0.22);
+            --bg-dim: rgba(40, 30, 10, 0.05);
+        }
+        html[data-theme="dark"] {
+            --ink: #e9dec8;
+            --ink-soft: #b8ab8e;
+            --gold: #e2b64f;
+            --gold-deep: #f2cd75;
+            --gold-soft: #c8a25e;
+            --gold-pale: rgba(200, 162, 94, 0.32);
+            --card-bg: rgba(30, 26, 20, 0.55);
+            --card-bg-hover: rgba(45, 38, 29, 0.80);
+            --card-border: rgba(200, 162, 94, 0.26);
+            --glass: rgba(30, 26, 20, 0.50);
+            --chip-bg: rgba(60, 52, 40, 0.55);
+            --mark-bg: rgba(226, 182, 79, 0.38);
+            --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+            --ring: rgba(226, 182, 79, 0.25);
+            --bg-dim: rgba(0, 0, 0, 0.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--ink);
+        }
+        :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+        /* ============ 背景层：图片 + 暗色压暗 + 粒子画布 ============ */
+        .bg-image {
+            position: fixed; inset: 0; z-index: 0;
+            background: url("../image/index-background.jpg") center / cover no-repeat;
+            transition: filter .4s ease;
+        }
+        html[data-theme="dark"] .bg-image { filter: brightness(.60) saturate(.92); }
+        .bg-dim {
+            position: fixed; inset: 0; z-index: 0;
+            background: var(--bg-dim);
+            transition: background .4s ease;
+        }
+        #goldSandCanvas {
+            position: fixed; inset: 0; z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ============ 主体容器 ============ */
+        .container {
+            position: relative; z-index: 2;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 64px 20px 110px;
+            min-height: 100vh;
+        }
+
+        /* ============ 页头 ============ */
+        .page-head { text-align: center; margin-bottom: 30px; }
+        .page-head h1 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            color: var(--gold-deep);
+            text-shadow: 0 2px 18px var(--gold-pale);
+        }
+        .head-line {
+            width: 84px; height: 3px;
+            margin: 14px auto 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+        }
+        .subtitle { margin-top: 12px; font-size: 1.05rem; color: var(--ink-soft); }
+        .stats {
+            margin-top: 18px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+        }
+        .stat {
+            font-size: .88rem;
+            color: var(--ink-soft);
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            border-radius: 999px;
+            padding: 5px 14px;
+            backdrop-filter: blur(8px);
+        }
+        .stat b { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ============ 工具栏：搜索 ============ */
+        .search-box { position: relative; max-width: 520px; margin: 0 auto; }
+        .search-ico {
+            position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%);
+            width: 18px; height: 18px;
+            color: var(--gold-soft);
+            pointer-events: none;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 13px 46px 13px 44px;
+            border-radius: 999px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--ink);
+            font-size: 1rem;
+            font-family: inherit;
+            backdrop-filter: blur(10px);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        #searchInput::placeholder { color: var(--ink-soft); opacity: .75; }
+        #searchInput::-webkit-search-cancel-button { -webkit-appearance: none; }
+        #searchInput:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--ring);
+            background: var(--card-bg-hover);
+        }
+        .clear-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            border: none;
+            background: var(--glass);
+            color: var(--ink-soft);
+            cursor: pointer;
+            font-size: 14px; line-height: 1;
+            display: none; align-items: center; justify-content: center;
+            transition: .2s;
+        }
+        .clear-btn.show { display: flex; }
+        .clear-btn:hover { background: var(--gold); color: #fff; }
+
+        /* ============ 工具栏：标签 + 排序 ============ */
+        .tag-row {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 8px; margin: 16px auto 0;
+            max-width: 520px;
+        }
+        .tag-chip {
+            border: 1px solid var(--gold-pale);
+            background: var(--chip-bg);
+            color: var(--ink-soft);
+            border-radius: 999px;
+            padding: 7px 15px;
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: .2s;
+        }
+        .tag-chip:hover { color: var(--gold-deep); border-color: var(--gold); }
+        .tag-chip.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+        .tag-chip .cnt { opacity: .65; margin-left: 4px; font-size: .82em; }
+        .sort-row {
+            display: flex; justify-content: flex-end; align-items: center;
+            margin: 12px auto 0;
+            max-width: 520px;
+        }
+        .sort-label { font-size: .85rem; color: var(--ink-soft); margin-right: 8px; }
+        .sort-btn {
+            border: 1px solid var(--gold-pale);
+            background: transparent;
+            color: var(--ink-soft);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .sort-btn + .sort-btn { margin-left: 6px; }
+        .sort-btn.active {
+            background: var(--glass);
+            color: var(--gold-deep);
+            border-color: var(--gold);
+        }
+
+        /* ============ 文章卡片列表 ============ */
+        .blog-list {
+            display: flex; flex-direction: column; gap: 14px;
+            margin-top: 14px;
+        }
+        .blog-card {
+            position: relative;
+            display: block;
+            padding: 18px 22px 16px;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            color: var(--ink);
+            text-decoration: none;
+            transition: transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s, background .25s, border-color .25s;
+        }
+        .blog-card:hover {
+            transform: translateY(-3px);
+            background: var(--card-bg-hover);
+            border-color: var(--gold-soft);
+            box-shadow: var(--shadow);
+        }
+        .card-top {
+            display: flex; align-items: center; flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: .82rem;
+            color: var(--ink-soft);
+        }
+        .card-date { font-variant-numeric: tabular-nums; }
+        .card-read {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--chip-bg);
+            border: 1px solid var(--gold-pale);
+        }
+        .card-tags {
+            display: flex; flex-wrap: wrap; justify-content: flex-end;
+            gap: 6px; margin-left: auto;
+        }
+        .card-tag {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: .78rem;
+            background: var(--chip-bg);
+            border: 1px solid var(--gold-pale);
+            color: var(--gold-deep);
+        }
+        .card-title {
+            font-size: 1.16rem;
+            font-weight: 600;
+            color: var(--gold-deep);
+            margin-bottom: 6px;
+            line-height: 1.45;
+            transition: color .2s;
+        }
+        .blog-card:hover .card-title { color: var(--gold); }
+        .card-excerpt { font-size: .9rem; line-height: 1.75; color: var(--ink-soft); }
+        .card-arrow {
+            position: absolute; right: 16px; top: 16px;
+            width: 22px; height: 22px;
+            color: var(--gold-soft);
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: .25s;
+        }
+        .blog-card:hover .card-arrow { opacity: 1; transform: none; }
+        mark {
+            background: var(--mark-bg);
+            color: inherit;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        /* ============ 空状态 ============ */
+        .empty-state {
+            display: none;
+            flex-direction: column; align-items: center;
+            padding: 56px 20px;
+            color: var(--ink-soft);
+        }
+        .empty-state.show { display: flex; }
+        .empty-state svg {
+            width: 44px; height: 44px;
+            color: var(--gold-soft);
+            margin-bottom: 14px;
+            opacity: .7;
+        }
+        .empty-state p { font-size: .95rem; margin-bottom: 16px; }
+        .reset-btn {
+            border: 1px solid var(--gold);
+            color: var(--gold-deep);
+            background: transparent;
+            border-radius: 999px;
+            padding: 7px 20px;
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .reset-btn:hover { background: var(--gold); color: #fff; }
+
+        /* ============ 页脚 ============ */
+        .footer-copy {
+            text-align: center;
+            margin-top: 52px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gold-pale);
+            font-size: .78rem;
+            color: var(--gold-soft);
+            line-height: 1.8;
+        }
+
+        /* ============ 固定按钮：左下返回/语言，右上主题 ============ */
+        .left-bottom-bar {
+            position: fixed; left: 24px; bottom: 24px; z-index: 6;
+            display: flex; gap: 10px;
+        }
+        .theme-btn { position: fixed; right: 24px; top: 24px; z-index: 6; }
+        .ui-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(90, 70, 30, .08);
+            color: var(--gold-deep);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+            transition: .2s;
+        }
+        .ui-btn:hover {
+            background: var(--card-bg-hover);
+            border-color: var(--gold-soft);
+            transform: translateY(-2px);
+        }
+        .ui-btn svg { width: 19px; height: 19px; }
+        .lang-btn { font-size: .8rem; font-weight: 600; letter-spacing: .02em; }
+
+        /* ============ 入场动画 ============ */
+        .anim-in {
+            opacity: 0;
+            animation: fadeUp .6s cubic-bezier(.22, 1, .36, 1) forwards;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 640px) {
+            .container { padding: 44px 16px 100px; }
+            .page-head h1 { font-size: 2rem; }
+            .blog-card { padding: 15px 16px 14px; }
+            .left-bottom-bar { left: 16px; bottom: 16px; }
+            .theme-btn { right: 16px; top: 16px; }
+            .sort-row { justify-content: space-between; }
+        }
+
+        /* 尊重减少动态效果偏好 */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .anim-in { opacity: 1; animation: none; }
+            .blog-card, .ui-btn, .tag-chip, #searchInput { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <div class="bg-dim"></div>
+    <canvas id="goldSandCanvas"></canvas>
+
+    <!-- 固定按钮：返回首页 / 切换语言 / 明暗主题 -->
+    <div class="left-bottom-bar">
+        <a class="ui-btn" href="../index.html" id="backBtn" title="返回首页" aria-label="返回首页">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        </a>
+        <button class="ui-btn lang-btn" id="langBtn" aria-label="切换语言">en</button>
+    </div>
+    <button class="ui-btn theme-btn" id="themeBtn" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg id="themeSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="themeMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <main class="container">
+        <!-- ===== 页头 ===== -->
+        <header class="page-head">
+            <h1 data-lang="blogTitle">个人博客</h1>
+            <div class="head-line" aria-hidden="true"></div>
+            <p class="subtitle" data-lang="blogSubtitle">记录生活与技术的数字花园</p>
+            <div class="stats" id="statsRow" aria-label="博客统计"></div>
+        </header>
+
+        <!-- ===== 工具栏：搜索 / 标签 / 排序 ===== -->
+        <section class="toolbar" aria-label="文章筛选">
+            <div class="search-box">
+                <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="search" id="searchInput" placeholder="搜索文章标题、摘要或标签…" autocomplete="off" spellcheck="false" aria-label="搜索文章">
+                <button class="clear-btn" id="clearBtn" aria-label="清空搜索">×</button>
+            </div>
+            <div class="tag-row" id="tagRow" role="group" aria-label="按标签筛选"></div>
+            <div class="sort-row">
+                <span class="sort-label" data-lang="sortLabel">排序</span>
+                <button class="sort-btn active" id="sortNew" data-sort="new" data-lang="sortNew">最新</button>
+                <button class="sort-btn" id="sortOld" data-sort="old" data-lang="sortOld">最早</button>
+            </div>
+        </section>
+
+        <!-- ===== 文章列表 ===== -->
+        <section class="blog-list" id="blogList" aria-label="文章列表"></section>
+
+        <!-- ===== 空状态 ===== -->
+        <div class="empty-state" id="emptyState">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/><path d="M8.5 11h5"/></svg>
+            <p data-lang="emptyTitle">没有找到相关文章</p>
+            <p data-lang="emptyDesc" style="margin-bottom:16px;font-size:.85rem;opacity:.8">换个关键词，或清除筛选条件试试。</p>
+            <button class="reset-btn" id="resetBtn" data-lang="resetBtn">清除筛选</button>
+        </div>
+
+        <!-- ===== 页脚 ===== -->
+        <footer class="footer-copy">
+            <span data-lang="copyright">© 丙午2026 xyLX·Wang · 保留所有权利</span><br>
+            <span data-lang="powered">由 Cloudflare 提供支持</span>
+        </footer>
+    </main>
+
+    <script>
+        /* ==================== 文章数据（标题/摘要/标签均提炼自各篇真实文章） ==================== */
+        const POSTS = [
+            {
+                id: "b001", file: "./blogs/b001.html", date: "2026-08-21", words: 140, tags: ["site"],
+                zh: { title: "我的个人网站成立了", excerpt: "网站刚刚创建，内容还不多：可以先把它添加进书签，之后方便随时回来看。有任何问题欢迎反馈（联系方式暂未开放）。" },
+                en: { title: "My Website Is Launched", excerpt: "The site is brand new with little content yet: bookmark it to check back later. Feedback is welcome (contact info stays private for now)." }
+            },
+            {
+                id: "b002", file: "./blogs/b002.html", date: "2026-08-30", words: 100, tags: ["life"],
+                zh: { title: "呜呜，明天就要报道了", excerpt: "开学在即，日常时间会被学业占据，博客更新节奏将进入暂缓状态——但不会就此停更，之后有空会继续整理发布。" },
+                en: { title: "School Starts Tomorrow", excerpt: "The new term is coming and daily time will be taken by studies, so blog updates will slow down — not stop. More posts will come when I have time." }
+            },
+            {
+                id: "b003", file: "./blogs/b003.html", date: "2026-08-30", words: 850, tags: ["tech", "security", "science"],
+                zh: { title: "关于极域UDP攻击（作者曾亲身经历）", excerpt: "信息课上常见的“UDP渗透极域”到底是怎么发生的？本文从无连接协议、默认信任局域网的软件设计讲起，科普原理、课堂现实与风险。" },
+                en: { title: "About UDP Injection on Classroom Software", excerpt: "How does the notorious \"UDP injection\" against classroom management software work? Starting from the connectionless UDP protocol and the software's trust-in-LAN design, this post explains the principle, reality and risks." }
+            },
+            {
+                id: "b004", file: "./blogs/b004.html", date: "2026-09-04", words: 1350, tags: ["tech", "science", "video"],
+                zh: { title: "关于硬解与软解", excerpt: "为什么一模一样的机房电脑，一台播视频流畅、一台疯狂翻车？核心是硬解码与软解码的差异，以及显卡驱动失效后的降级逻辑。" },
+                en: { title: "Hardware vs. Software Video Decoding", excerpt: "Why do two identical lab PCs behave so differently when playing video? The core is the difference between hardware and software decoding, plus the fallback logic after GPU drivers break." }
+            },
+            {
+                id: "b005", file: "./blogs/b005.html", date: "2026-09-04", words: 1250, tags: ["tech", "science", "hardware"],
+                zh: { title: "关于VGA", excerpt: "VGA 不只是蓝色的老式视频线：从 0xB8000 文本模式、位平面图形模式，到 SVGA 线性帧缓冲，再到现代 Windows 的 VGA 兼容回退。" },
+                en: { title: "About VGA", excerpt: "VGA is more than a blue legacy video cable: from the 0xB8000 text mode and planar graphics, to SVGA linear frame buffers, and modern Windows' VGA compatibility fallback." }
+            },
+            {
+                id: "b006", file: "./blogs/b006.html", date: "2026-10-05", words: 600, tags: ["tech", "science"],
+                zh: { title: "Android中的奇怪时间BUG", excerpt: "在部分 Android 系统（MIUI13，Android 12 内核）中，把时间调到上限 2037.12.31 后再同步，时间竟跳到 2094 年；两次跳变都恰好接近 32 位有符号整数上限 2³¹−1，是 Android 遗留，还是小米定制时的疏漏？" },
+                en: { title: "The Weird Android Time Bug", excerpt: "On some Android builds (MIUI 13, Android 12), setting the clock to its 2037.12.31 limit and syncing jumps the time to 2094. Both jumps landed just under the 32-bit signed int max — a leftover overflow bug, or a MIUI customization slip?" }
+            }
+        ];
+
+        const TAG_LABELS = {
+            site:     { zh: "建站",     en: "Site" },
+            life:     { zh: "生活",     en: "Life" },
+            tech:     { zh: "技术",     en: "Tech" },
+            science:  { zh: "科普",     en: "Science" },
+            security: { zh: "网络安全", en: "Security" },
+            video:    { zh: "视频",     en: "Video" },
+            hardware: { zh: "硬件",     en: "Hardware" }
+        };
+
+        const ARROW_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
+
+        /* ==================== 界面文案（双语） ==================== */
+        const LANG = {
+            zh: {
+                blogTitle: "个人博客",
+                blogSubtitle: "记录生活与技术的数字花园",
+                searchPh: "搜索文章标题、摘要或标签…",
+                allTag: "全部",
+                sortLabel: "排序",
+                sortNew: "最新",
+                sortOld: "最早",
+                readTime: m => "约 " + m + " 分钟",
+                statPosts: "篇文章",
+                statTags: "个标签",
+                statMins: "分钟阅读",
+                emptyTitle: "没有找到相关文章",
+                emptyDesc: "换个关键词，或清除筛选条件试试。",
+                resetBtn: "清除筛选",
+                copyright: "© 丙午2026 xyLX·Wang · 保留所有权利",
+                powered: "由 Cloudflare 提供支持",
+                langBtn: "en",
+                docTitle: "个人博客 | xyLX·Wang"
+            },
+            en: {
+                blogTitle: "Personal Blog",
+                blogSubtitle: "A digital garden of life & tech",
+                searchPh: "Search title, excerpt or tags…",
+                allTag: "All",
+                sortLabel: "Sort",
+                sortNew: "Newest",
+                sortOld: "Oldest",
+                readTime: m => "~" + m + " min read",
+                statPosts: "posts",
+                statTags: "tags",
+                statMins: "min read",
+                emptyTitle: "No posts found",
+                emptyDesc: "Try another keyword, or clear the filters.",
+                resetBtn: "Clear filters",
+                copyright: "© 2026 xyLX·Wang · All Rights Reserved",
+                powered: "Powered by Cloudflare",
+                langBtn: "汉",
+                docTitle: "Personal Blog | xyLX·Wang"
+            }
+        };
+
+        let lang = "zh";
+        try { lang = localStorage.getItem("siteLang") || "zh"; } catch (e) { }
+        const t = key => LANG[lang][key];
+
+        /* ==================== 状态 ==================== */
+        const state = { query: "", tags: new Set(), sort: "new" };
+
+        /* ==================== 工具函数 ==================== */
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+        function highlight(text, q) {
+            const safe = escapeHtml(text);
+            if (!q) return safe;
+            const esc = escapeHtml(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return safe.replace(new RegExp("(" + esc + ")", "gi"), "<mark>$1</mark>");
+        }
+        const minutesOf = p => Math.max(1, Math.round(p.words / 300));
+        const totalMinutes = () => Math.max(1, Math.round(POSTS.reduce((s, p) => s + p.words, 0) / 300));
+
+        /* ==================== 渲染：统计 ==================== */
+        function renderStats() {
+            const tagsCount = new Set(POSTS.flatMap(p => p.tags)).size;
+            document.getElementById("statsRow").innerHTML =
+                '<span class="stat"><b>' + POSTS.length + '</b> ' + t("statPosts") + "</span>" +
+                '<span class="stat"><b>' + tagsCount + '</b> ' + t("statTags") + "</span>" +
+                '<span class="stat"><b>~' + totalMinutes() + '</b> ' + t("statMins") + "</span>";
+        }
+
+        /* ==================== 渲染：标签 ==================== */
+        function renderTags() {
+            const counts = {};
+            POSTS.forEach(p => p.tags.forEach(tg => counts[tg] = (counts[tg] || 0) + 1));
+            const order = Object.keys(counts);
+            const wrap = document.getElementById("tagRow");
+            const frag = document.createDocumentFragment();
+            const mk = (key, label, cnt, active) => {
+                const b = document.createElement("button");
+                b.className = "tag-chip" + (active ? " active" : "");
+                b.dataset.tag = key;
+                b.setAttribute("aria-pressed", active ? "true" : "false");
+                b.innerHTML = label + (cnt > 0 ? '<span class="cnt">' + cnt + "</span>" : "");
+                return b;
+            };
+            frag.appendChild(mk("all", t("allTag"), POSTS.length, state.tags.size === 0));
+            order.forEach(tg => frag.appendChild(mk(tg, TAG_LABELS[tg][lang], counts[tg], state.tags.has(tg))));
+            wrap.innerHTML = "";
+            wrap.appendChild(frag);
+        }
+
+        /* ==================== 渲染：文章列表 ==================== */
+        function renderList() {
+            const q = state.query.trim().toLowerCase();
+            const list = POSTS.filter(p => {
+                if (state.tags.size && !p.tags.some(tg => state.tags.has(tg))) return false;
+                if (q) {
+                    const hay = (p.zh.title + " " + p.zh.excerpt + " " +
+                        p.tags.map(tg => TAG_LABELS[tg].zh + " " + TAG_LABELS[tg].en).join(" ")).toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+            list.sort((a, b) => state.sort === "new" ? (a.date < b.date ? 1 : -1) : (a.date < b.date ? -1 : 1));
+
+            const wrap = document.getElementById("blogList");
+            wrap.innerHTML = "";
+            if (!list.length) {
+                document.getElementById("emptyState").classList.add("show");
+                return;
+            }
+            document.getElementById("emptyState").classList.remove("show");
+
+            const frag = document.createDocumentFragment();
+            list.forEach((p, i) => {
+                const card = document.createElement("a");
+                card.className = "blog-card";
+                card.href = p.file;
+                card.setAttribute("aria-label", p[lang].title);
+
+                const top = document.createElement("div");
+                top.className = "card-top";
+                const date = document.createElement("span");
+                date.className = "card-date";
+                date.textContent = p.date;
+                const read = document.createElement("span");
+                read.className = "card-read";
+                read.textContent = t("readTime")(minutesOf(p));
+                const tags = document.createElement("span");
+                tags.className = "card-tags";
+                p.tags.forEach(tg => {
+                    const s = document.createElement("span");
+                    s.className = "card-tag";
+                    s.innerHTML = highlight(TAG_LABELS[tg][lang], q);
+                    tags.appendChild(s);
+                });
+                top.append(date, read, tags);
+
+                const title = document.createElement("h2");
+                title.className = "card-title";
+                title.innerHTML = highlight(p[lang].title, q);
+
+                const ex = document.createElement("p");
+                ex.className = "card-excerpt";
+                ex.innerHTML = highlight(p[lang].excerpt, q);
+
+                const arrow = document.createElement("span");
+                arrow.className = "card-arrow";
+                arrow.setAttribute("aria-hidden", "true");
+                arrow.innerHTML = ARROW_SVG;
+
+                card.append(top, title, ex, arrow);
+                frag.appendChild(card);
+            });
+            wrap.appendChild(frag);
+
+            /* 入场 stagger：仅首次渲染延迟错开，之后直接呈现 */
+            const cards = wrap.querySelectorAll(".blog-card");
+            cards.forEach((c, i) => {
+                c.classList.add("anim-in");
+                if (!renderList._animated) c.style.animationDelay = (i * 60) + "ms";
+            });
+            renderList._animated = true;
+        }
+
+        /* ==================== 渲染总入口 ==================== */
+        function render() {
+            renderStats();
+            renderTags();
+            renderList();
+            document.getElementById("clearBtn").classList.toggle("show", state.query.length > 0);
+            const input = document.getElementById("searchInput");
+            if (input.value !== state.query) input.value = state.query;
+        }
+
+        /* ==================== 交互：搜索 / 标签 / 排序 ==================== */
+        const searchInput = document.getElementById("searchInput");
+        let debounceTimer = null;
+        searchInput.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                state.query = searchInput.value;
+                render();
+            }, 120);
+        });
+
+        document.getElementById("clearBtn").addEventListener("click", () => {
+            state.query = "";
+            render();
+            searchInput.focus();
+        });
+
+        document.getElementById("tagRow").addEventListener("click", e => {
+            const chip = e.target.closest(".tag-chip");
+            if (!chip) return;
+            const key = chip.dataset.tag;
+            if (key === "all") state.tags.clear();
+            else if (state.tags.has(key)) state.tags.delete(key);
+            else state.tags.add(key);
+            render();
+        });
+
+        document.querySelectorAll(".sort-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                state.sort = btn.dataset.sort;
+                document.querySelectorAll(".sort-btn").forEach(b => b.classList.toggle("active", b === btn));
+                render();
+            });
+        });
+
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            state.query = "";
+            state.tags.clear();
+            state.sort = "new";
+            document.getElementById("sortNew").classList.add("active");
+            document.getElementById("sortOld").classList.remove("active");
+            render();
+            searchInput.focus();
+        });
+
+        /* 键盘快捷键：/ 聚焦搜索，Esc 清空 */
+        document.addEventListener("keydown", e => {
+            const tag = (e.target.tagName || "").toLowerCase();
+            if (e.key === "/" && tag !== "input" && tag !== "textarea") {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            if (e.key === "Escape" && document.activeElement === searchInput) {
+                state.query = "";
+                render();
+                searchInput.blur();
+            }
+        });
+
+        /* ==================== 双语切换 ==================== */
+        function setLang(l) {
+            lang = l;
+            try { localStorage.setItem("siteLang", l); } catch (e) { }
+            document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+            document.title = t("docTitle");
+            document.getElementById("langBtn").textContent = t("langBtn");
+            searchInput.placeholder = t("searchPh");
+            document.querySelectorAll("[data-lang]").forEach(el => {
+                const key = el.getAttribute("data-lang");
+                if (LANG[l][key] !== undefined) el.textContent = LANG[l][key];
+            });
+            render();
+        }
+        document.getElementById("langBtn").addEventListener("click", () => setLang(lang === "zh" ? "en" : "zh"));
+        setLang(lang);
+
+        /* ==================== 明暗主题 ==================== */
+        const themeBtn = document.getElementById("themeBtn");
+        const themeSun = document.getElementById("themeSun");
+        const themeMoon = document.getElementById("themeMoon");
+        function updateThemeIcon() {
+            const dark = document.documentElement.getAttribute("data-theme") === "dark";
+            themeSun.style.display = dark ? "block" : "none";
+            themeMoon.style.display = dark ? "none" : "block";
+        }
+        themeBtn.addEventListener("click", () => {
+            const cur = document.documentElement.getAttribute("data-theme");
+            const next = cur === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            try { localStorage.setItem("siteTheme", next); } catch (e) { }
+            updateThemeIcon();
+        });
+        updateThemeIcon();
+
+        /* ==================== 金沙粒子（升级：鼠标拨动 + 数量自适应 + DPR 高清） ==================== */
+        (function () {
+            const canvas = document.getElementById("goldSandCanvas");
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext("2d");
+            const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            let W = 0, H = 0, particles = [];
+            let mouse = { x: null, y: null };
+            let rafId = null;
+            let resizeTimer = null;
+            const colors = ["#fff1b8", "#ffdd70", "#f7c84e", "#e8b435", "#d4a028", "#c28c1c"];
+
+            function resize() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth;
+                H = window.innerHeight;
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                canvas.style.width = W + "px";
+                canvas.style.height = H + "px";
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                createParticles();
+            }
+            function createParticles() {
+                const count = reduced ? 0 : Math.max(50, Math.min(240, Math.round(W * H / 9000)));
+                particles = new Array(count);
+                for (let i = 0; i < count; i++) {
+                    particles[i] = {
+                        x: Math.random() * W,
+                        y: Math.random() * H,
+                        size: Math.random() * 3.2 + 0.4,
+                        sx: (Math.random() - 0.5) * 0.35,
+                        sy: (Math.random() - 0.5) * 0.25,
+                        color: colors[(Math.random() * colors.length) | 0],
+                        alpha: Math.random() * 0.7 + 0.15,
+                        tw: Math.random() * 0.018 + 0.004
+                    };
+                }
+            }
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                const R = 110, R2 = R * R;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.alpha += p.tw;
+                    if (p.alpha > 0.85 || p.alpha < 0.12) p.tw = -p.tw;
+                    let dx = 0, dy = 0;
+                    if (mouse.x !== null) {
+                        const mx = p.x - mouse.x, my = p.y - mouse.y;
+                        const d2 = mx * mx + my * my;
+                        if (d2 < R2 && d2 > 0.01) {
+                            const d = Math.sqrt(d2);
+                            const force = (R - d) / R * 0.7;
+                            dx = mx / d * force;
+                            dy = my / d * force;
+                        }
+                    }
+                    p.x += p.sx + dx;
+                    p.y += p.sy + dy;
+                    if (p.x > W) p.x = 0; else if (p.x < 0) p.x = W;
+                    if (p.y > H) p.y = 0; else if (p.y < 0) p.y = H;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                rafId = requestAnimationFrame(animate);
+            }
+            window.addEventListener("pointermove", e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            }, { passive: true });
+            window.addEventListener("pointerleave", () => { mouse.x = null; mouse.y = null; });
+            window.addEventListener("resize", () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(resize, 200);
+            });
+            resize();
+            if (!reduced) animate();
+        })();
+
+        /* ==================== 控制台彩蛋 ==================== */
+        console.log("%c📖 这里是博客页面", "font-size:18px;color:#946c22;");
+        console.log("提示：按 / 快速搜索文章；右上角可切换明暗主题；返回首页 index.html 还有隐藏彩蛋。");
+
+        /* ==================== 从 URL 参数恢复搜索（主页菜单搜索跳转） ==================== */
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const q = (urlParams.get("q") || "").trim();
+            if (q) {
+                state.query = q;
+                const input = document.getElementById("searchInput");
+                if (input) input.value = q;
+                render();
+                const firstCard = document.querySelector(".blog-card");
+                if (firstCard) {
+                    const y = firstCard.getBoundingClientRect().top + window.scrollY - 90;
+                    window.scrollTo({ top: y, behavior: "smooth" });
+                }
+            }
+        } catch (e) { }
+
+    </script>
+</body>
+</html>
