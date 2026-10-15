@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小园 · 苏式园林</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232a2a2e' d='M4 11L12 4l8 7h-2v8H6v-8z'/%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #d8dce0; }
+  #scene { display: block; width: 100%; height: 100%; touch-action: none; }
+  .ui { position: fixed; z-index: 10; font-family: -apple-system, "Songti SC", "STSong", "SimSun", "serif"; color: #2a2a2e; user-select: none; pointer-events: none; }
+  .title { top: 30px; left: 36px; }
+  .title h1 { font-size: 24px; font-weight: 600; letter-spacing: 6px; }
+  .title p { margin-top: 8px; font-size: 13px; opacity: 0.6; letter-spacing: 3px; }
+  .hint { bottom: 24px; left: 50%; transform: translateX(-50%); font-size: 12px; opacity: 0.55; letter-spacing: 2px; background: rgba(255,255,255,0.55); padding: 8px 18px; border-radius: 20px; backdrop-filter: blur(6px); white-space: nowrap; }
+  @media (max-width: 600px) {
+    .title { top: 20px; left: 20px; }
+    .title h1 { font-size: 19px; }
+    .hint { font-size: 11px; bottom: 18px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="ui title">
+  <h1>小园</h1>
+  <p>半亩方塘 · 一檐青山</p>
+</div>
+<div class="ui hint">拖拽旋转 · 滚轮 / 双指缩放</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- 渲染器 ----------
+  var canvas = document.getElementById('scene');
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.95;
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xd8dce0);
+  scene.fog = new THREE.Fog(0xd8dce0, 25, 60);
+
+  var camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+  var target = new THREE.Vector3(0, 1.2, 0);
+
+  // ---------- 光照：柔和午后 ----------
+  var sun = new THREE.DirectionalLight(0xfff0d8, 1.1);
+  sun.position.set(8, 12, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 40;
+  sun.shadow.camera.left = -12;
+  sun.shadow.camera.right = 12;
+  sun.shadow.camera.top = 12;
+  sun.shadow.camera.bottom = -12;
+  sun.shadow.bias = -0.0005;
+  scene.add(sun);
+
+  var hemi = new THREE.HemisphereLight(0xdce8f0, 0x9a9686, 0.6);
+  scene.add(hemi);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+
+  // ---------- 材质 ----------
+  var matWall   = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.95, metalness: 0 });
+  var matRoof   = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: 0.85, metalness: 0 });
+  var matWood   = new THREE.MeshStandardMaterial({ color: 0x4a3222, roughness: 0.7 });
+  var matDoor   = new THREE.MeshStandardMaterial({ color: 0x3a2818, roughness: 0.65 });
+  var matWindow = new THREE.MeshStandardMaterial({ color: 0xe8e4d8, roughness: 0.8 });
+  var matGround = new THREE.MeshStandardMaterial({ color: 0xc8c0b0, roughness: 1 });
+  var matGrass  = new THREE.MeshStandardMaterial({ color: 0x8fb070, roughness: 1 });
+  var matStone  = new THREE.MeshStandardMaterial({ color: 0x9a9892, roughness: 1 });
+  var matRock   = new THREE.MeshStandardMaterial({ color: 0x7a7a7a, roughness: 1, flatShading: true });
+  var matBamboo = new THREE.MeshStandardMaterial({ color: 0x6a9a4a, roughness: 0.7 });
+  var matLeaf    = new THREE.MeshStandardMaterial({ color: 0x5a8f46, roughness: 0.9, side: THREE.DoubleSide });
+  var matPine   = new THREE.MeshStandardMaterial({ color: 0x3a6a3a, roughness: 0.95 });
+  var matLanternGlow = new THREE.MeshStandardMaterial({ color: 0xffe9b0, emissive: 0xffcc66, emissiveIntensity: 0.5 });
+
+  function box(w, h, d, mat, x, y, z, cast, recv) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z);
+    m.castShadow = cast !== false;
+    m.receiveShadow = recv !== false;
+    scene.add(m);
+    return m;
+  }
+
+  // ---------- 地面：庭院铺地 + 边缘草地 ----------
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), matGround);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  // 草地斑块（后院）
+  var grassPatch = new THREE.Mesh(new THREE.CircleGeometry(6, 24), matGrass);
+  grassPatch.rotation.x = -Math.PI / 2;
+  grassPatch.position.set(0, 0.01, 6);
+  grassPatch.receiveShadow = true;
+  scene.add(grassPatch);
+
+  // ---------- 厅堂：白墙黑瓦飞檐 ----------
+  // 台基
+  box(5.2, 0.35, 4.2, new THREE.MeshStandardMaterial({ color: 0xb8b4ac, roughness: 1 }), 0, 0.175, 0);
+  // 墙体
+  box(4.5, 2.6, 3.5, matWall, 0, 0.35 + 1.3, 0);
+  // 柱（四角深色木柱）
+  [[-2.2, -1.7], [2.2, -1.7], [-2.2, 1.7], [2.2, 1.7]].forEach(function (p) {
+    box(0.18, 2.9, 0.18, matWood, p[0], 0.35 + 1.45, p[1]);
+  });
+  // 檐口梁
+  box(4.7, 0.18, 3.7, matWood, 0, 3.05, 0);
+
+  // 双坡屋顶 + 四角飞檐
+  var roofSlope = Math.atan2(0.9, 2.5);
+  var roofLen = Math.sqrt(2.5 * 2.5 + 0.9 * 0.9);
+  var roofGeo = new THREE.BoxGeometry(roofLen, 0.14, 4.3);
+  var roofL = new THREE.Mesh(roofGeo, matRoof);
+  roofL.position.set(-1.25, 3.6, 0);
+  roofL.rotation.z = roofSlope;
+  roofL.castShadow = true; roofL.receiveShadow = true;
+  scene.add(roofL);
+  var roofR = new THREE.Mesh(roofGeo, matRoof);
+  roofR.position.set(1.25, 3.6, 0);
+  roofR.rotation.z = -roofSlope;
+  roofR.castShadow = true; roofR.receiveShadow = true;
+  scene.add(roofR);
+  // 屋脊
+  var ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 4.35, 8), matRoof);
+  ridge.rotation.x = Math.PI / 2;
+  ridge.position.set(0, 4.08, 0);
+  ridge.castShadow = true;
+  scene.add(ridge);
+  // 屋脊两端起翘（吻兽）
+  [-1, 1].forEach(function (sz) {
+    var tip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 4), matRoof);
+    tip.position.set(0, 4.2, sz * 2.2);
+    tip.rotation.x = sz * 0.4;
+    tip.castShadow = true;
+    scene.add(tip);
+  });
+
+  // 门（居中，深色木门）
+  box(1.1, 2.0, 0.1, matDoor, 0, 0.35 + 1.0, -1.78);
+  var knob = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), matStone);
+  knob.position.set(0.38, 1.35, -1.85);
+  scene.add(knob);
+  // 门前台阶
+  box(1.6, 0.14, 0.6, new THREE.MeshStandardMaterial({ color: 0xb8b4ac, roughness: 1 }), 0, 0.07, -2.1);
+  box(1.3, 0.14, 0.4, new THREE.MeshStandardMaterial({ color: 0xc8c4bc, roughness: 1 }), 0, 0.21, -2.0);
+
+  // 花格窗（左右各一，深色木格 + 米白窗纸）
+  function latticeWindow(w, h) {
+    var g = new THREE.Group();
+    var frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.08), matWood);
+    g.add(frame);
+    var paper = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.06), matWindow);
+    paper.position.z = -0.01;
+    g.add(paper);
+    // 木格
+    for (var i = -1; i <= 1; i++) {
+      var barV = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.04), matWood);
+      barV.position.x = i * w / 3;
+      g.add(barV);
+      var barH = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, 0.04), matWood);
+      barH.position.y = i * h / 3;
+      g.add(barH);
+    }
+    return g;
+  }
+  var wL = latticeWindow(0.9, 1.0);
+  wL.position.set(-1.35, 1.8, -1.76);
+  scene.add(wL);
+  var wR = latticeWindow(0.9, 1.0);
+  wR.position.set(1.35, 1.8, -1.76);
+  scene.add(wR);
+
+  // ---------- 不规则曲池 ----------
+  function makeWaterTexture() {
+    var c = document.createElement('canvas');
+    c.width = 256; c.height = 256;
+    var ctx = c.getContext('2d');
+    var grad = ctx.createLinearGradient(0, 0, 256, 256);
+    grad.addColorStop(0, '#5a9ab0');
+    grad.addColorStop(1, '#3a7a90');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    for (var i = 0; i < 24; i++) {
+      ctx.beginPath();
+      var y = Math.random() * 256;
+      ctx.lineWidth = 0.8 + Math.random() * 1.4;
+      for (var x = 0; x <= 256; x += 6) {
+        ctx.lineTo(x, y + Math.sin(x * 0.05 + i * 1.2) * 2.2);
+      }
+      ctx.stroke();
+    }
+    var tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2, 2);
+    return tex;
+  }
+  var waterTex = makeWaterTexture();
+
+  // 用 Shape 画一个曲折的水池轮廓
+  var pondShape = new THREE.Shape();
+  pondShape.moveTo(-2.5, -1.2);
+  pondShape.bezierCurveTo(-2.8, -0.3, -2.2, 0.8, -1.2, 1.0);
+  pondShape.bezierCurveTo(-0.3, 1.2, 0.2, 0.6, 0.8, 0.8);
+  pondShape.bezierCurveTo(1.6, 1.0, 2.2, 0.3, 2.0, -0.5);
+  pondShape.bezierCurveTo(1.8, -1.3, 0.8, -1.6, -0.2, -1.5);
+  pondShape.bezierCurveTo(-1.2, -1.4, -2.2, -1.8, -2.5, -1.2);
+  var pondGeo = new THREE.ShapeGeometry(pondShape, 24);
+  var water = new THREE.Mesh(pondGeo, new THREE.MeshStandardMaterial({
+    map: waterTex, roughness: 0.25, metalness: 0.05, transparent: true, opacity: 0.92
+  }));
+  water.rotation.x = -Math.PI / 2;
+  water.position.set(-3.2, 0.05, -1.5);
+  water.receiveShadow = true;
+  scene.add(water);
+
+  // 池边石（沿轮廓放一圈）
+  var stonePts = pondShape.getPoints(20);
+  stonePts.forEach(function (p, i) {
+    if (i % 2 !== 0) return;
+    var s = new THREE.Mesh(new THREE.SphereGeometry(0.16 + Math.random() * 0.08, 7, 5), matStone);
+    s.position.set(-3.2 + p.x, 0.08, -1.5 - p.y);
+    s.scale.y = 0.55;
+    s.castShadow = true; s.receiveShadow = true;
+    scene.add(s);
+  });
+
+  // 荷花
+  var matLily = new THREE.MeshStandardMaterial({ color: 0x4a8c4a, roughness: 0.8, side: THREE.DoubleSide });
+  var matLilyFlower = new THREE.MeshStandardMaterial({ color: 0xf0a8c0, roughness: 0.6 });
+  [[-3.8, -1.2], [-2.8, -0.8], [-4.2, -2.0]].forEach(function (p, i) {
+    var pad = new THREE.Mesh(new THREE.CircleGeometry(0.22, 10), matLily);
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(p[0], 0.07, p[1]);
+    scene.add(pad);
+    if (i < 2) {
+      var fl = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), matLilyFlower);
+      fl.position.set(p[0], 0.18, p[1]);
+      scene.add(fl);
+    }
+  });
+
+  // ---------- 曲桥 ----------
+  var bridge = new THREE.Group();
+  var matBridge = new THREE.MeshStandardMaterial({ color: 0xd8d4cc, roughness: 0.9 });
+  var b1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 1.0), matBridge);
+  b1.position.set(0, 0.25, 0);
+  var b2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 1.0), matBridge);
+  b2.position.set(0.35, 0.25, 0.55);
+  b2.rotation.y = Math.PI / 7;
+  var b3 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 1.0), matBridge);
+  b3.position.set(0.1, 0.25, 1.15);
+  bridge.add(b1, b2, b3);
+  bridge.position.set(-2.5, 0, -2.8);
+  bridge.rotation.y = 0.3;
+  bridge.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  scene.add(bridge);
+
+  // ---------- 太湖石假山 ----------
+  function makeRock(x, y, z, s) {
+    var geo = new THREE.IcosahedronGeometry(1, 1);
+    var pos = geo.attributes.position;
+    for (var i = 0; i < pos.count; i++) {
+      var vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+      var n = 1 + (Math.random() - 0.5) * 0.5;
+      pos.setXYZ(i, vx * n, vy * n * 0.8, vz * n);
+    }
+    geo.computeVertexNormals();
+    var m = new THREE.Mesh(geo, matRock);
+    m.position.set(x, y, z);
+    m.scale.set(s, s * 1.2, s);
+    m.castShadow = true; m.receiveShadow = true;
+    scene.add(m);
+  }
+  makeRock(3.8, 0.5, -1.5, 0.9);
+  makeRock(4.4, 0.35, -1.0, 0.6);
+  makeRock(3.4, 0.3, -0.8, 0.5);
+  makeRock(4.0, 1.2, -1.4, 0.5);
+
+  // ---------- 造型松 ----------
+  function makePine(x, z, s) {
+    var g = new THREE.Group();
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06 * s, 0.1 * s, 1.2 * s, 6), matWood);
+    trunk.position.y = 0.6 * s;
+    trunk.rotation.z = 0.15;
+    trunk.castShadow = true;
+    g.add(trunk);
+    [[0, 1.3, 0, 0.7], [0.3, 1.7, 0.1, 0.5], [-0.2, 1.9, -0.1, 0.4]].forEach(function (c) {
+      var crown = new THREE.Mesh(new THREE.SphereGeometry(c[3] * s, 8, 6), matPine);
+      crown.position.set(c[0] * s, c[1] * s, c[2] * s);
+      crown.scale.y = 0.5;
+      crown.castShadow = true;
+      g.add(crown);
+    });
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+  makePine(5.2, -0.5, 1.1);
+  makePine(-5.5, 1.5, 0.9);
+
+  // ---------- 竹 ----------
+  function makeBamboo(x, z, h) {
+    var g = new THREE.Group();
+    var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, h, 6), matBamboo);
+    stem.position.y = h / 2;
+    stem.castShadow = true;
+    g.add(stem);
+    for (var i = 1; i < 4; i++) {
+      var ring = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.006, 4, 8), matBamboo);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = i * h / 4;
+      g.add(ring);
+    }
+    for (var j = 0; j < 3; j++) {
+      var leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.07), matLeaf);
+      leaf.position.set(0, h - 0.15, 0);
+      leaf.rotation.set(0.4, j * Math.PI * 2 / 3, 0.4);
+      g.add(leaf);
+    }
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+  [[-5, 3], [-4.5, 3.5], [5, 3.5], [5.5, 3], [0, 5]].forEach(function (p) {
+    makeBamboo(p[0], p[1], 2.2 + Math.random() * 0.6);
+  });
+
+  // ---------- 石灯笼 ----------
+  function makeLantern(x, z) {
+    var g = new THREE.Group();
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.25, 6), matStone);
+    base.position.y = 0.125;
+    var pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.6, 6), matStone);
+    pillar.position.y = 0.55;
+    var glow = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), matLanternGlow);
+    glow.position.y = 0.95;
+    var roof = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.16, 4), matStone);
+    roof.position.y = 1.15;
+    g.add(base, pillar, glow, roof);
+    g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+  makeLantern(-1.8, -2.6);
+  makeLantern(2.2, -2.4);
+
+  // ---------- 石板路 ----------
+  var matPath = new THREE.MeshStandardMaterial({ color: 0xb8b4ac, roughness: 1 });
+  [[0, -2.6], [0.2, -3.2], [-0.1, -3.8], [0.1, -4.4]].forEach(function (p, i) {
+    var slab = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.5), matPath);
+    slab.position.set(p[0], 0.03, p[1]);
+    slab.rotation.y = (i % 2 ? 0.15 : -0.1);
+    slab.receiveShadow = true;
+    scene.add(slab);
+  });
+
+  // ---------- 轨道相机（自实现） ----------
+  var cam = {
+    theta: Math.PI + 0.35,
+    phi: Math.PI / 3.4,
+    dist: 20,
+    tTheta: Math.PI + 0.35,
+    tPhi: Math.PI / 3.4,
+    tDist: 13.5,
+    introStart: null,
+    introFrom: 20,
+    introTo: 13.5
+  };
+  var dragging = false, lastX = 0, lastY = 0;
+  var el = renderer.domElement;
+
+  function onDown(x, y) { dragging = true; lastX = x; lastY = y; }
+  function onMove(x, y) {
+    if (!dragging) return;
+    var dx = x - lastX, dy = y - lastY;
+    lastX = x; lastY = y;
+    cam.tTheta -= dx * 0.008;
+    cam.tPhi -= dy * 0.008;
+    cam.tPhi = Math.max(0.3, Math.min(Math.PI / 2 - 0.08, cam.tPhi));
+  }
+  function onUp() { dragging = false; }
+  el.addEventListener('mousedown', function (e) { onDown(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function (e) { onMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', onUp);
+  el.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  el.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  el.addEventListener('touchend', onUp);
+  el.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    cam.tDist += e.deltaY * 0.01;
+    cam.tDist = Math.max(6, Math.min(26, cam.tDist));
+  }, { passive: false });
+
+  window.addEventListener('resize', function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // ---------- 渲染循环 ----------
+  var shownIntro = false;
+  function tick(now) {
+    requestAnimationFrame(tick);
+    // 入场
+    if (!shownIntro) {
+      if (reduced) {
+        cam.dist = cam.introTo;
+        shownIntro = true;
+      } else {
+        if (cam.introStart === null) cam.introStart = now;
+        var p = Math.min(1, (now - cam.introStart) / 2000);
+        var e = 1 - Math.pow(1 - p, 3);
+        cam.dist = cam.introFrom + (cam.introTo - cam.introFrom) * e;
+        if (p >= 1) shownIntro = true;
+      }
+    }
+    cam.theta += (cam.tTheta - cam.theta) * 0.08;
+    cam.phi += (cam.tPhi - cam.phi) * 0.08;
+    if (shownIntro) cam.dist += (cam.tDist - cam.dist) * 0.08;
+
+    var aspect = window.innerWidth / window.innerHeight;
+    var fit = aspect < 0.85 ? 0.85 / aspect : 1;
+    var useDist = cam.dist * fit;
+    var sp = Math.sin(cam.phi), cp = Math.cos(cam.phi);
+    camera.position.set(
+      target.x + useDist * sp * Math.sin(cam.theta),
+      target.y + useDist * cp,
+      target.z + useDist * sp * Math.cos(cam.theta)
+    );
+    camera.lookAt(target);
+
+    if (!reduced) {
+      waterTex.offset.x += 0.0004;
+      waterTex.offset.y += 0.0002;
+    }
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
