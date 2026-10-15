@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xyLX·Wang</title>
+    <link rel="icon" type="image/png" href="./image/index-icon.png">
+    <link rel="preload" href="./image/index-background.jpg" as="image">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            color: #333;
+        }
+        /* 底层背景图片 */
+        .bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("./image/index-background.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+        /* 金沙粒子画布 */
+        #goldSandCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        /* 文字容器：淡入+从下方上浮动画 */
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: fadeUp 1.2s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            color: #946c22;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .desc {
+            font-size: 1.1rem;
+            color: #70592f;
+            max-width: 520px;
+            line-height: 1.7;
+        }
+        /* 版权页脚 */
+        .footer-copyright {
+            margin-top: 48px;
+            font-size: 0.8rem;
+            color: #b39862;
+            opacity: 0.85;
+            line-height: 1.6;
+        }
+        /* ===== 信息区块：关于我 + 最近更新 ===== */
+        .info-grid {
+            display: flex;
+            gap: 48px;
+            margin-top: 36px;
+            max-width: 760px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .info-block {
+            flex: 1 1 300px;
+            min-width: 260px;
+            text-align: left;
+        }
+        .info-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: #b39862;
+            margin-bottom: 12px;
+        }
+        .info-text {
+            font-size: 0.95rem;
+            color: #70592f;
+            line-height: 1.9;
+            margin-bottom: 14px;
+        }
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .tag {
+            font-size: 0.78rem;
+            color: #70592f;
+            border: 1px solid rgba(148, 108, 34, 0.35);
+            border-radius: 999px;
+            padding: 3px 12px;
+            background: rgba(255, 255, 255, 0.35);
+        }
+        .update-list {
+            list-style: none;
+        }
+        .update-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #70592f;
+            line-height: 2;
+        }
+        .update-link {
+            color: #946c22;
+            text-decoration: underline;
+            text-decoration-color: rgba(148, 108, 34, 0.4);
+            text-underline-offset: 3px;
+            word-break: break-all;
+        }
+        .update-link:hover { color: #70592f; }
+
+        /* 最近更新：默认只显示前三条，其余展开后可见 */
+        .update-list li.update-more {
+            display: none;
+        }
+        #updateList.expanded .update-more {
+            display: flex;
+        }
+        .update-toggle {
+            background: none;
+            border: none;
+            padding: 2px 0;
+            font-size: 0.8rem;
+            color: #b39862;
+            cursor: pointer;
+            letter-spacing: 0.1em;
+        }
+        .update-toggle:hover { color: #946c22; }
+        .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #b39862;
+            flex-shrink: 0;
+        }
+        .status {
+            margin-left: auto;
+            font-size: 0.72rem;
+            color: #b39862;
+            border: 1px solid rgba(179, 152, 98, 0.4);
+            border-radius: 999px;
+            padding: 1px 9px;
+            white-space: nowrap;
+        }
+        .status-wip {
+            color: #a8844a;
+            border-color: rgba(168, 132, 74, 0.45);
+        }
+        @media (max-width: 640px) {
+            .info-grid {
+                flex-direction: column;
+                gap: 28px;
+            }
+            /* 展开全部后，内容不被固定按钮遮挡 */
+            .container {
+                padding-bottom: 88px;
+            }
+            .update-toggle {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                padding: 0 8px;
+            }
+        }
+        /* 支持作者按钮 */
+        .support-btn {
+            margin-top: 20px;
+            padding: 8px 22px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid #b39862;
+            background-color: rgba(255,255,255,0.2);
+            color: #946c22;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+            .support-btn:hover {
+                background-color: rgba(179,152,98,0.25);
+            }
+        /* 左下角固定按钮组 */
+        .left-bottom-bar {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            z-index: 3;
+            display: flex;
+            gap: 12px;
+        }
+        /* 手机端按钮移到右下角，避开左对齐的列表文字 */
+        @media (max-width: 640px) {
+            .left-bottom-bar {
+                left: auto;
+                right: 24px;
+            }
+        }
+
+        .ui-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background-color: rgba(255,255,255,0.35);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(180,150,90,0.35);
+            font-size: 18px;
+            color: #70592f;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+            .ui-btn:hover {
+                background-color: rgba(255,255,255,0.6);
+            }
+        /* 底部滑入菜单弹窗 */
+        .menu-popup {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            padding: 32px 20px;
+            background-color: rgba(235,234,232,0.72);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 3px 3px 0 0;
+            z-index: 10;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #555;
+            transform: translateY(100%);
+            visibility: hidden;
+            transition: transform 0.35s ease-out, visibility 0s 0.35s;
+        }
+
+            .menu-popup.open {
+                transform: translateY(0);
+                visibility: visible;
+                transition: transform 0.35s ease-out, visibility 0s 0s;
+            }
+
+        .menu-link-item {
+            display: block;
+            width: 230px;
+            margin: 11px auto;
+            padding: 13px 16px;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(180,150,90,0.35);
+            color: #70592f;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+            .menu-link-item:hover {
+                background-color: rgba(255,255,255,0.85);
+            }
+
+        .menu-link-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            line-height: 1.35;
+        }
+
+        .menu-note {
+            font-size: 0.72rem;
+            color: #a3804a;
+            opacity: 0.85;
+        }
+        /* 遮罩层 */
+        .menu-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 9;
+            background-color: rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s 0.3s;
+        }
+
+            .menu-mask.show {
+                opacity: 1;
+                visibility: visible;
+                transition: opacity 0.3s ease, visibility 0s 0s;
+            }
+        /* 菜单弹窗右上角关闭按钮 */
+        .menu-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background-color: rgba(255,255,255,0.55);
+            border: 1px solid rgba(180,150,90,0.35);
+            color: #70592f;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+            .menu-close:hover {
+                background-color: rgba(255,255,255,0.8);
+            }
+        /* 菜单内搜索框 */
+        .menu-search-row {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto 14px;
+        }
+        .menu-search-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            color: #a3804a;
+            pointer-events: none;
+        }
+        .menu-search-input {
+            width: 100%;
+            padding: 11px 16px 11px 38px;
+            border-radius: 12px;
+            border: 1px solid rgba(180,150,90,0.4);
+            background-color: rgba(255,255,255,0.6);
+            backdrop-filter: blur(4px);
+            color: #70592f;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .menu-search-input::placeholder {
+            color: #a3804a;
+            opacity: 0.8;
+        }
+        .menu-search-input:focus {
+            border-color: #b39862;
+            background-color: rgba(255,255,255,0.85);
+        }
+        /* 提示弹窗（支持作者） */
+        .toast-popup {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%,-50%);
+            background-color: rgba(235, 234, 232, 0.72);
+            color: black;
+            padding: 14px 28px;
+            border-radius: 10px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.25s;
+        }
+
+            .toast-popup.show {
+                opacity: 1;
+            }
+
+        @media(max-width:600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .desc {
+                font-size: 1rem;
+            }
+
+            .menu-link-item {
+                width: 85%;
+            }
+        }
+        /* 桌面端：菜单项横排 */
+        @media (min-width: 601px) {
+            .menu-popup {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 28px 24px 34px;
+            }
+            .menu-links-row {
+                display: flex;
+                gap: 14px;
+                justify-content: center;
+            }
+            .menu-link-item {
+                width: 200px;
+                margin: 0;
+                min-height: 68px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+        }
+        /* 键盘焦点可见（金色描边，与站点配色一致） */
+        :focus-visible {
+            outline: 2px solid #946c22;
+            outline-offset: 2px;
+        }
+        /* 菜单打开时锁定背景滚动 */
+        body.menu-lock {
+            overflow: hidden;
+        }
+        /* 支持按钮点击反馈 */
+        .support-btn:active {
+            transform: scale(0.97);
+        }
+        /* 彩蛋退出按钮（沿用小圆钮风格） */
+        .egg-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 20;
+            display: none;
+        }
+        #easterEggPage.easter-egg-on .egg-close {
+            display: flex;
+        }
+        /* 尊重减少动态效果偏好 */
+        @media (prefers-reduced-motion: reduce) {
+            .container {
+                animation: none;
+                opacity: 1;
+                transform: none;
+            }
+            .menu-popup,
+            .menu-mask,
+            .support-btn {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <canvas id="goldSandCanvas"></canvas>
+    <!-- 左下角按钮组 -->
+    <div class="left-bottom-bar">
+        <button class="ui-btn" id="menuBtn" aria-label="打开导航" aria-expanded="false" aria-controls="menuPopup" title="导航菜单">☰</button>
+        <button class="ui-btn" id="langBtn" aria-label="切换语言 / Switch language" data-lang="langBtn">en</button>
+    </div>
+    <!-- 底部滑出菜单弹窗 +遮罩 -->
+    <div class="menu-mask" id="menuMask"></div>
+    <div class="menu-popup" id="menuPopup" role="dialog" aria-modal="true" aria-label="站点导航" aria-hidden="true">
+        <button class="menu-close" id="menuClose" aria-label="关闭菜单" title="关闭（Esc）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+        <div class="menu-search-row">
+            <svg class="menu-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input class="menu-search-input" id="menuSearch" type="search" placeholder="搜索博客文章…" autocomplete="off" enterkeyhint="search">
+        </div>
+        <div class="menu-links-row">
+            <a class="menu-link-item" href="./pages/blog-index.html" data-lang="blogLinkText">个人博客</a>
+            <a class="menu-link-item" href="./pages/works-index.html" data-lang="worksLinkText">我的作品</a>
+            <a class="menu-link-item menu-link-stack" href="./pages/pad-index.html">
+                <span data-lang="padLinkText">建议反馈</span>
+                <span class="menu-note" data-lang="padLinkNote">欢迎留下你的建议</span>
+            </a>
+        </div>
+    </div>
+    <!-- 点击支持作者的toast提示 -->
+    <div class="toast-popup" id="supportToast" role="status" aria-live="polite" data-lang="thanksTip">已收到支持，谢谢</div>
+    <div class="container">
+        <h1 data-lang="title">欢迎来到我的个人网站</h1>
+        <p class="desc">
+            <span data-lang="desc1">这里是我的个人站点，目前仅完成首页。</span><br>
+            <span data-lang="desc2">后续会陆续添加更多内容，敬请期待。</span>
+        </p>
+        <div class="info-grid">
+            <section class="info-block">
+                <h2 class="info-title" data-lang="aboutTitle">关于我</h2>
+                <p class="info-text" data-lang="aboutText">喜欢折腾网页与创意小工具，把想法做成可以打开的小东西。</p>
+                <div class="tag-row">
+                    <span class="tag" data-lang="tag1">网页</span>
+                    <span class="tag" data-lang="tag2">前端</span>
+                    <span class="tag" data-lang="tag3">小工具</span>
+                    <span class="tag" data-lang="tag4">创作</span>
+                </div>
+            </section>
+            <section class="info-block">
+                <h2 class="info-title" data-lang="updatesTitle">最近更新</h2>
+                <ul class="update-list" id="updateList">
+                    <li><span class="dot"></span><span data-lang="upd9">开始修复曼德勃罗分型探索工具在高放大倍率下出现画面崩坏的现象（最近启动项目都报，我是不是有点水）</span></li>
+                    <li><span class="dot"></span><span data-lang="upd10">研究了一个BUG并更新一篇博客</span></li>
+                    <li><span class="dot"></span><span data-lang="upd1">优化了部分作品</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd2">为博客页添加了快捷键功能</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd3">优化了博客页交互逻辑</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd4">优化了作品页交互逻辑</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd5">新上线了几个作品</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd6">新上线了</span> <a class="update-link" href="https://chem-is-try.pages.dev" target="_blank" rel="noopener">chem-is-try.pages.dev</a></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd7">启动了留言板的开发</span><span class="status status-wip" data-lang="statusWip">开发中</span></li>
+                    <li class="update-more"><span class="dot"></span><span data-lang="upd8">新上线了</span> <a class="update-link" href="https://mount3d.pages.dev" target="_blank" rel="noopener">mount3d.pages.dev</a></li>
+                    <li class="update-toggle-row"><button class="update-toggle" id="updateToggle" type="button" data-lang="updateMore" aria-expanded="false">展开全部</button></li>
+                </ul>
+            </section>
+        </div>
+        <button class="support-btn" id="supportAuthor" data-lang="supportBtn">支持一下作者</button>
+        <div class="footer-copyright">
+            <span data-lang="copyright">© 丙午2026 xyLX·Wang 保留所有权利</span><br>
+            <span data-lang="powered">由 Cloudflare 提供支持</span>
+        </div>
+    </div>
+    <!-- 彩蛋全屏页面 -->
+    <div id="easterEggPage" style="display:none;position:fixed;inset:0;z-index:9999;overflow:hidden;">
+        <!--星空底层背景-->
+        <div id="starSkyBg" style="position:absolute;width:100%;height:100%;background:url('./image/star-bg.jpg') center/cover no-repeat;"></div>
+        <!--彩蛋退出按钮（移动端也可见，方便中途退出）-->
+        <button class="ui-btn egg-close" id="eggClose" aria-label="退出彩蛋" title="退出（Esc）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+        <!--烟花画布-->
+        <canvas id="fireworkCanvas" style="position:absolute;inset:0;"></canvas>
+        <!--滚动终末之诗文本容器-->
+        <div id="endPoemWrap" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none;">
+            <div id="endPoemText" style="width:600px;margin:0 auto;padding-top:120vh;color:#e8e8ff;font-size:20px;line-height:2.2;text-align:center;text-shadow:0 0 8px #88aaff;">
+                <h1 style="font-size:36px;margin-bottom:40px;color:#fff;text-shadow:0 0 12px #aaccff;">感谢</h1>
+                <p>你来到了这片星空。</p>
+                <p>很高兴你发现这个隐藏的角落。</p>
+                <p>每一次点击，都是一次微小的相遇。</p>
+                <br>
+                <p>愿你永远保有好奇心，</p>
+                <p>愿意去探索那些不起眼的秘密。</p>
+                <p>不要害怕去尝试新事物，</p>
+                <p>哪怕写出来的代码并不完美。</p>
+                <br>
+                <p>在无数闪烁的星光之间，</p>
+                <p>每一个微小想法，都可以绽放属于自己的烟花。</p>
+                <p>继续往前走吧。</p>
+                <p>你的故事，才刚刚开始。</p>
+                <br>
+                <p style="color:#a0a0cc;font-size:16px;">————xylx·Wang    本站彩蛋</p>
+                <br>
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('goldSandCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        const goldColors = [
+            '#fff1b8',
+            '#ffdd70',
+            '#f7c84e',
+            '#e8b435',
+            '#d4a028',
+            '#c28c1c'
+        ];
+        const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        let mouse = { x: null, y: null };
+        let resizeTimer = null;
+        function resize() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            createParticles();
+        }
+        function createParticles(count = 220) {
+            particles = [];
+            const n = reducedMotion ? 0 : count;
+            for (let i = 0; i < n; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 3.2 + 0.4,
+                    speedX: (Math.random() - 0.5) * 0.35,
+                    speedY: (Math.random() - 0.5) * 0.25,
+                    color: goldColors[Math.floor(Math.random() * goldColors.length)],
+                    alpha: Math.random() * 0.7 + 0.15,
+                    twinkleSpeed: Math.random() * 0.018
+                })
+            }
+        }
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            const R = 110, R2 = R * R;
+            for (let p of particles) {
+                p.alpha += p.twinkleSpeed;
+                if (p.alpha > 0.85 || p.alpha < 0.12) {
+                    p.twinkleSpeed = -p.twinkleSpeed;
+                }
+                let dx = 0, dy = 0;
+                if (mouse.x !== null) {
+                    const mx = p.x - mouse.x, my = p.y - mouse.y;
+                    const d2 = mx * mx + my * my;
+                    if (d2 < R2 && d2 > 0.01) {
+                        const d = Math.sqrt(d2);
+                        const force = (R - d) / R * 0.7;
+                        dx = mx / d * force;
+                        dy = my / d * force;
+                    }
+                }
+                p.x += p.speedX + dx;
+                p.y += p.speedY + dy;
+                if (p.x > width) p.x = 0;
+                if (p.x < 0) p.x = width;
+                if (p.y > height) p.y = 0;
+                if (p.y < 0) p.y = height;
+                ctx.beginPath();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener("pointermove", e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        }, { passive: true });
+        window.addEventListener("pointerleave", () => { mouse.x = null; mouse.y = null; });
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => { resize(); }, 200);
+        });
+        resize();
+        if (!reducedMotion) animate();
+        // =========交互逻辑==========
+        //菜单弹窗
+        const menuBtn = document.getElementById("menuBtn");
+        const menuPopup = document.getElementById("menuPopup");
+        const menuMask = document.getElementById("menuMask");
+        function toggleMenu(force) {
+            const open = force !== undefined ? force : !menuPopup.classList.contains("open");
+            menuPopup.classList.toggle("open", open);
+            menuMask.classList.toggle("show", open);
+            menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+            menuPopup.setAttribute("aria-hidden", open ? "false" : "true");
+            document.body.classList.toggle("menu-lock", open);
+            if (open) {
+                const first = menuPopup.querySelector(".menu-link-item");
+                if (first) first.focus();
+            } else {
+                menuBtn.focus();
+            }
+        }
+        menuBtn.addEventListener("click", () => toggleMenu());
+        menuMask.addEventListener("click", () => toggleMenu(false));
+        const menuClose = document.getElementById("menuClose");
+        if (menuClose) menuClose.addEventListener("click", () => toggleMenu(false));
+        //菜单搜索：回车跳转博客页并自动搜索
+        const menuSearch = document.getElementById("menuSearch");
+        if (menuSearch) {
+            menuSearch.addEventListener("keydown", e => {
+                if (e.key === "Enter") {
+                    const q = menuSearch.value.trim();
+                    if (q) {
+                        location.href = "./pages/blog-index.html?q=" + encodeURIComponent(q);
+                    }
+                }
+            });
+        }
+        //支持作者弹窗
+        const supportAuthorBtn = document.getElementById("supportAuthor");
+        const supportToast = document.getElementById("supportToast");
+        supportAuthorBtn.addEventListener("click", () => {
+            supportToast.classList.add("show");
+            setTimeout(() => {
+                supportToast.classList.remove("show");
+            }, 1600);
+        })
+        // ========双语切换逻辑========
+        const langData = {
+            "zh": {
+                title: "欢迎来到我的个人网站",
+                desc1: "这里是我的个人站点，博客、作品、留言板均已上线。",
+                desc2: "后续还会添加更多内容，敬请期待。",
+                supportBtn: "支持一下作者",
+                copyright: "© 丙午2026 xyLX·Wang。 保留所有权利",
+                powered: "由 Cloudflare 提供支持",
+                langBtn: "en",
+                blogLinkText: "个人博客",
+                worksLinkText: "我的作品",
+                padLinkText: "建议反馈",
+                padLinkNote: "欢迎留下你的建议",
+                thanksTip: "已收到支持，谢谢",
+                searchPh: "搜索博客文章…",
+                aboutTitle: "关于我",
+                aboutText: "喜欢折腾网页与创意小工具，把想法做成可以打开的小东西。",
+                tag1: "网页",
+                tag2: "前端",
+                tag3: "小工具",
+                tag4: "创作",
+                updatesTitle: "最近更新",
+                upd1: "优化了部分作品",
+                upd2: "为博客页添加了快捷键功能",
+                upd3: "优化了博客页交互逻辑",
+                upd4: "优化了作品页交互逻辑",
+                upd5: "新上线了几个作品",
+                upd6: "新上线了",
+                upd7: "启动了留言板的开发",
+                upd8: "新上线了",
+                upd9: "开始修复曼德勃罗分型探索工具在高放大倍率下出现画面崩坏的现象（最近启动项目都报，我是不是有点水）",
+                upd10: "研究了一个BUG并更新一篇博客",
+                updateMore: "展开全部",
+                updateLess: "收起",
+                statusLive: "已上线",
+                statusWip: "开发中"
+            },
+            "en": {
+                title: "Welcome to My Personal Website",
+                desc1: "This is my personal site. Blog, works and message board are all live.",
+                desc2: "More content is coming soon, stay tuned.",
+                supportBtn: "Support Author",
+                copyright: "© 丙午2026 xyLX·Wang. All Rights Reserved",
+                powered: "Powered by Cloudflare",
+                langBtn: "汉",
+                blogLinkText: "Personal Blog",
+                worksLinkText: "My Works",
+                padLinkText: "Feedback",
+                padLinkNote: "Your suggestions are welcome",
+                thanksTip: "Thank you for your support!",
+                searchPh: "Search blog posts…",
+                aboutTitle: "About",
+                aboutText: "I enjoy tinkering with web pages and creative tools — turning ideas into things you can open.",
+                tag1: "Web",
+                tag2: "Frontend",
+                tag3: "Mini tools",
+                tag4: "Creation",
+                updatesTitle: "Recent Updates",
+                upd1: "Polished several works",
+                upd2: "Added keyboard shortcuts to the blog page",
+                upd3: "Improved blog page interactions",
+                upd4: "Improved works page interactions",
+                upd5: "Published several new works",
+                upd6: "Launched",
+                upd7: "Started building the message board",
+                upd8: "Launched",
+                upd9: "Started fixing the Mandelbrot fractal explorer's rendering breakdown at high zoom levels (every recent project launch reports it — am I slacking off?)",
+                upd10: "Investigated a bug and published a blog post",
+                updateMore: "Show all",
+                updateLess: "Collapse",
+                statusLive: "Live",
+                statusWip: "WIP"
+            }
+        };
+        let currentLang = localStorage.getItem("siteLang") || "zh";
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem("siteLang", lang);
+            document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+            document.querySelectorAll("[data-lang]").forEach(el => {
+                const key = el.getAttribute("data-lang");
+                el.innerText = langData[lang][key];
+            })
+            const searchInput = document.getElementById("menuSearch");
+            if (searchInput) searchInput.placeholder = langData[lang].searchPh;
+            const ul = document.getElementById("updateList");
+            const tl = document.getElementById("updateToggle");
+            if (ul && ul.classList.contains("expanded") && tl) {
+                tl.innerText = langData[lang].updateLess;
+            }
+        }
+        setLang(currentLang);
+        const langBtn = document.getElementById("langBtn");
+        langBtn.addEventListener("click", () => {
+            if (currentLang === "zh") {
+                setLang("en");
+            } else {
+                setLang("zh");
+            }
+        });
+        // ========最近更新：展开 / 收起========
+        (function initUpdateToggle() {
+            const ul = document.getElementById("updateList");
+            const tl = document.getElementById("updateToggle");
+            if (!ul || !tl) return;
+            tl.addEventListener("click", () => {
+                const expanded = ul.classList.toggle("expanded");
+                tl.innerText = langData[currentLang][expanded ? "updateLess" : "updateMore"];
+                tl.setAttribute("aria-expanded", expanded ? "true" : "false");
+            });
+        })();
+
+        // ============网站彩蛋：控制台+6次点击支持按钮触发星空烟花终末之诗============
+        document.addEventListener('DOMContentLoaded', function () {
+            // 控制台彩蛋
+            console.log("%c 🎉 恭喜你发现彩蛋！", "font-size:24px;color:#ffd700;");
+            console.log("你发现了本站的秘密，试试连续点击「支持一下作者」按钮6次。");
+
+            const supportBtn = document.getElementById('supportAuthor');
+            const easterEggPage = document.getElementById('easterEggPage');
+            const endPoemText = document.getElementById('endPoemText');
+            const fwCanvas = document.getElementById('fireworkCanvas');
+
+            if (!supportBtn) console.warn("缺少：supportAuthor（按钮id）");
+            if (!easterEggPage) console.warn("缺少：easterEggPage 外层div");
+            if (!endPoemText) console.warn("缺少：endPoemText 文字容器");
+            if (!fwCanvas) console.warn("缺少：fireworkCanvas canvas画布");
+
+            if (!supportBtn || !easterEggPage || !endPoemText || !fwCanvas) {
+                console.warn("彩蛋所需DOM未找到，彩蛋已跳过");
+                return;
+            }
+
+            const fwCtx = fwCanvas.getContext('2d');
+
+            let clickCount = 0;
+            let clickTimer = null;
+
+            // 烟花状态
+            let fireworks = [];
+            let particles = [];
+            let animId = null;
+            let fireworkCount = 0;
+            let poemStarted = false;
+            let poemScrollComplete = false;
+            let offsetY = 0; //字幕位移变量
+
+            supportBtn.addEventListener('click', () => {
+                clickCount++;
+                clearTimeout(clickTimer);
+                // 2秒无点击重置计数
+                clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+
+                if (clickCount >= 6) {
+                    clickCount = 0;
+                    triggerEasterEgg();
+                }
+            });
+
+            function triggerEasterEgg() {
+                easterEggPage.style.display = 'block';
+                easterEggPage.classList.add("easter-egg-on");
+                fwCanvas.width = window.innerWidth;
+                fwCanvas.height = window.innerHeight;
+
+                fireworks = [];
+                particles = [];
+                fireworkCount = 0;
+                poemStarted = false;
+                poemScrollComplete = false;
+
+                // 清除全部遗留内联样式，杜绝布局污染
+                endPoemText.style.removeProperty('padding-top');
+                endPoemText.style.removeProperty('margin-top');
+                endPoemText.style.removeProperty('margin');
+                endPoemText.style.removeProperty('padding');
+
+                offsetY = window.innerHeight;
+                endPoemText.style.transform = `translateY(${offsetY}px)`;
+
+                startFireworkLoop();
+            }
+
+            function closeEgg() {
+                easterEggPage.style.display = 'none';
+                easterEggPage.classList.remove("easter-egg-on");
+                if (animId) {
+                    cancelAnimationFrame(animId);
+                    animId = null;
+                }
+                fireworks = [];
+                particles = [];
+                poemScrollComplete = true;
+            }
+
+            function startFireworkLoop() {
+                if (animId) cancelAnimationFrame(animId);
+
+                function loop() {
+                    if (easterEggPage.style.display !== 'block' || poemScrollComplete) {
+                        cancelAnimationFrame(animId);
+                        animId = null;
+                        return;
+                    }
+
+                    //拖尾参数
+                    fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+                    fwCtx.fillStyle = "rgba(0,0,0,0.3)";
+                    fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
+
+                    //持续烟花
+                    if (fireworkCount < 8) {
+                        if (Math.random() < 0.04) {
+                            createFirework();
+                        }
+                    } else {
+                        if (Math.random() < 0.15) {
+                            createFirework();
+                        }
+                    }
+
+                    updateFireworks();
+                    updateParticles();
+
+                    animId = requestAnimationFrame(loop);
+                }
+                loop();
+            }
+
+            function createFirework() {
+                const x = Math.random() * fwCanvas.width;
+                const y = fwCanvas.height;
+                const targetY = 80 + Math.random() * (fwCanvas.height * 0.45);
+                fireworks.push({
+                    x: x, y: y, targetY: targetY,
+                    speed: 4 + Math.random() * 2,
+                    color: `hsl(${Math.random() * 360},85%,65%)`
+                });
+                fireworkCount++;
+
+                //第8束烟花刚发射就启动字幕
+                if (fireworkCount === 8 && !poemStarted) {
+                    poemStarted = true;
+                    startPoemScroll();
+                }
+            }
+
+            function updateFireworks() {
+                for (let i = fireworks.length - 1; i >= 0; i--) {
+                    const fw = fireworks[i];
+                    fw.y -= fw.speed;
+                    if (fw.y <= fw.targetY) {
+                        for (let p = 0; p < 200; p++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const spd = Math.random() * 4 + 1;
+                            particles.push({
+                                x: fw.x, y: fw.y,
+                                vx: Math.cos(angle) * spd,
+                                vy: Math.sin(angle) * spd,
+                                alpha: 1,
+                                color: fw.color,
+                                life: 120
+                            })
+                        }
+                        fireworks.splice(i, 1);
+                    } else {
+                        fwCtx.beginPath();
+                        fwCtx.arc(fw.x, fw.y, 3, 0, Math.PI * 2);
+                        fwCtx.fillStyle = fw.color;
+                        fwCtx.fill();
+                    }
+                }
+            }
+
+            function updateParticles() {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.05;
+                    p.life--;
+                    p.alpha = p.life / 120;
+
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+                    fwCtx.save();
+                    fwCtx.globalAlpha = p.alpha;
+                    fwCtx.beginPath();
+                    fwCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                    fwCtx.fillStyle = p.color;
+                    fwCtx.fill();
+                    fwCtx.restore();
+                }
+            }
+
+            function startPoemScroll() {
+                const scrollSpeed = 0.45;
+                function scrollStep() {
+                    if (easterEggPage.style.display !== 'block') return;
+
+                    offsetY -= scrollSpeed;
+                    endPoemText.style.transform = `translateY(${offsetY}px)`;
+
+                    const textHeight = endPoemText.offsetHeight;
+                    //文字完全移出屏幕上方
+                    if (offsetY < -textHeight) {
+                        poemScrollComplete = true;
+                        closeEgg();
+                        return;
+                    }
+                    requestAnimationFrame(scrollStep);
+                }
+                requestAnimationFrame(scrollStep);
+            }
+
+            // ESC键：彩蛋打开时关闭彩蛋，否则关闭导航菜单
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== "Escape") return;
+                if (easterEggPage.style.display === 'block') {
+                    closeEgg();
+                    return;
+                }
+                if (menuPopup.classList.contains("open")) {
+                    toggleMenu(false);
+                }
+            });
+
+            // 彩蛋退出按钮（移动端等无 ESC 场景也能中途退出）
+            const eggClose = document.getElementById('eggClose');
+            if (eggClose) {
+                eggClose.addEventListener('click', closeEgg);
+            }
+
+            //窗口大小变化重置画布
+            window.addEventListener('resize', () => {
+                if (easterEggPage.style.display === 'block') {
+                    fwCanvas.width = window.innerWidth;
+                    fwCanvas.height = window.innerHeight;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
