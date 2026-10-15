@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的作品 | xyLX·Wang</title>
+    <meta name="description" content="xyLX·Wang 的作品集：3D 小游戏、网页工具、视觉特效与地质地形生成器，包含碧海夺宝、元素大陆、Path Studio、豆包 OS、Mount3D 等作品。">
+    <meta name="keywords" content="xyLX·Wang,作品集,网页游戏,网页工具,3D,地形生成器,Mount3D">
+    <meta name="author" content="xyLX·Wang">
+    <meta name="theme-color" content="#f7f1e3">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="我的作品 | xyLX·Wang">
+    <meta property="og:description" content="3D 小游戏、网页工具与视觉特效的作品集">
+    <meta property="og:image" content="../image/index-background.jpg">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="../image/index-icon.png">
+    <link rel="preload" href="../image/index-background.jpg" as="image">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "xyLX·Wang 的作品集",
+        "description": "3D 小游戏、网页工具与视觉特效",
+        "mainEntity": [
+            { "@type": "WebPage", "name": "碧海夺宝 · 3D 航海小游戏", "url": "./work/salling.html" },
+            { "@type": "WebPage", "name": "元素大陆 · 化学探索", "url": "./work/chem.html" },
+            { "@type": "WebPage", "name": "Path Studio · 可视化路径绘制", "url": "./work/path-studio.html" },
+            { "@type": "WebPage", "name": "横屏时钟", "url": "./work/clock.html" },
+            { "@type": "WebPage", "name": "豆包 OS · 桌面模拟", "url": "./work/dbOS.html" },
+            { "@type": "WebPage", "name": "曼德勃罗特集 · 无限缩放", "url": "./work/mdbl.html" },
+            { "@type": "WebPage", "name": "小园 · 苏式园林", "url": "./work/ting.html" },
+            { "@type": "WebPage", "name": "Mount3D · 地质 3D 地形生成器", "url": "https://mount3d.pages.dev" },
+            { "@type": "WebPage", "name": "岛屿地质 3D 地形生成器", "url": "https://mount3d.pages.dev/island.html" },
+            { "@type": "WebPage", "name": "无限地质 3D 地形生成器", "url": "https://mount3d.pages.dev/infty.html" },
+            { "@type": "WebPage", "name": "真实地质 3D 地形生成器", "url": "https://mount3d.pages.dev/forest-old.html" }
+        ]
+    }
+    </script>
+    <script>
+        /* 主题预加载：避免明暗主题闪烁 */
+        (function () {
+            try {
+                var saved = localStorage.getItem("siteTheme");
+                var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) { }
+        })();
+    </script>
+    <style>
+        /* ============ 主题变量（金色系，与博客页同一套体系） ============ */
+        :root {
+            --ink: #4a3d28;
+            --ink-soft: #7a6a4d;
+            --gold: #946c22;
+            --gold-deep: #7a5a1e;
+            --gold-soft: #b39862;
+            --gold-pale: rgba(179, 152, 98, 0.30);
+            --card-bg: rgba(255, 255, 255, 0.55);
+            --card-bg-hover: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(180, 150, 90, 0.35);
+            --glass: rgba(255, 255, 255, 0.40);
+            --chip-bg: rgba(255, 255, 255, 0.35);
+            --mark-bg: rgba(244, 200, 78, 0.42);
+            --shadow: 0 12px 36px rgba(90, 70, 30, 0.15);
+            --ring: rgba(148, 108, 34, 0.22);
+            --bg-dim: rgba(40, 30, 10, 0.05);
+            --badge-done-bg: rgba(232, 180, 53, 0.16);
+            --badge-done-fg: #8a6a2f;
+            --badge-beta-bg: rgba(200, 110, 60, 0.16);
+            --badge-beta-fg: #9c5a38;
+            --badge-old-bg: rgba(140, 130, 115, 0.16);
+            --badge-old-fg: #8d7f6a;
+        }
+        html[data-theme="dark"] {
+            --ink: #e9dec8;
+            --ink-soft: #b8ab8e;
+            --gold: #e2b64f;
+            --gold-deep: #f2cd75;
+            --gold-soft: #c8a25e;
+            --gold-pale: rgba(200, 162, 94, 0.32);
+            --card-bg: rgba(30, 26, 20, 0.55);
+            --card-bg-hover: rgba(45, 38, 29, 0.80);
+            --card-border: rgba(200, 162, 94, 0.26);
+            --glass: rgba(30, 26, 20, 0.50);
+            --chip-bg: rgba(60, 52, 40, 0.55);
+            --mark-bg: rgba(226, 182, 79, 0.38);
+            --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+            --ring: rgba(226, 182, 79, 0.25);
+            --bg-dim: rgba(0, 0, 0, 0.25);
+            --badge-done-bg: rgba(226, 182, 79, 0.18);
+            --badge-done-fg: #e2b64f;
+            --badge-beta-bg: rgba(200, 110, 60, 0.20);
+            --badge-beta-fg: #d98a5e;
+            --badge-old-bg: rgba(150, 140, 125, 0.18);
+            --badge-old-fg: #b3a689;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--ink);
+        }
+        :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+        /* ============ 背景层 ============ */
+        .bg-image {
+            position: fixed; inset: 0; z-index: 0;
+            background: url("../image/index-background.jpg") center / cover no-repeat;
+            transition: filter .4s ease;
+        }
+        html[data-theme="dark"] .bg-image { filter: brightness(.60) saturate(.92); }
+        .bg-dim {
+            position: fixed; inset: 0; z-index: 0;
+            background: var(--bg-dim);
+            transition: background .4s ease;
+        }
+        #goldSandCanvas {
+            position: fixed; inset: 0; z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ============ 主体容器 ============ */
+        .container {
+            position: relative; z-index: 2;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 64px 20px 110px;
+            min-height: 100vh;
+        }
+
+        /* ============ 页头（与博客页同款） ============ */
+        .page-head { text-align: center; margin-bottom: 30px; }
+        .page-head h1 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            color: var(--gold-deep);
+            text-shadow: 0 2px 18px var(--gold-pale);
+        }
+        .head-line {
+            width: 84px; height: 3px;
+            margin: 14px auto 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+        }
+        .subtitle { margin-top: 12px; font-size: 1.05rem; color: var(--ink-soft); }
+        .stats {
+            margin-top: 18px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+        }
+        .stat {
+            font-size: .88rem;
+            color: var(--ink-soft);
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            border-radius: 999px;
+            padding: 5px 14px;
+            backdrop-filter: blur(8px);
+        }
+        .stat b { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ============ 工具栏：搜索 + 分类 ============ */
+        .search-box { position: relative; max-width: 540px; margin: 0 auto; }
+        .search-ico {
+            position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%);
+            width: 18px; height: 18px;
+            color: var(--gold-soft);
+            pointer-events: none;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 13px 46px 13px 44px;
+            border-radius: 999px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--ink);
+            font-size: 1rem;
+            font-family: inherit;
+            backdrop-filter: blur(10px);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        #searchInput::placeholder { color: var(--ink-soft); opacity: .75; }
+        #searchInput::-webkit-search-cancel-button { -webkit-appearance: none; }
+        #searchInput:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--ring);
+            background: var(--card-bg-hover);
+        }
+        .clear-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            border: none;
+            background: var(--glass);
+            color: var(--ink-soft);
+            cursor: pointer;
+            font-size: 14px; line-height: 1;
+            display: none; align-items: center; justify-content: center;
+            transition: .2s;
+        }
+        .clear-btn.show { display: flex; }
+        .clear-btn:hover { background: var(--gold); color: #fff; }
+
+        .tag-row {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 8px; margin: 16px auto 0;
+            max-width: 540px;
+        }
+        .tag-chip {
+            border: 1px solid var(--gold-pale);
+            background: var(--chip-bg);
+            color: var(--ink-soft);
+            border-radius: 999px;
+            padding: 7px 15px;
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: .2s;
+        }
+        .tag-chip:hover { color: var(--gold-deep); border-color: var(--gold); }
+        .tag-chip.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+        .tag-chip .cnt { opacity: .65; margin-left: 4px; font-size: .85em; }
+
+        /* ============ 分类区块 ============ */
+        .works {
+            display: flex; flex-direction: column;
+            gap: 40px; margin-top: 26px;
+        }
+        .work-cat { width: 100%; }
+        .cat-title {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 1.3rem;
+            color: var(--gold-deep);
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .cat-title::before {
+            content: "";
+            width: 6px; height: 22px;
+            border-radius: 3px;
+            background: linear-gradient(var(--gold), var(--gold-soft));
+            flex: none;
+        }
+        .cat-count {
+            font-size: .85rem;
+            color: var(--gold-soft);
+            font-weight: 400;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============ 作品卡片网格 ============ */
+        .work-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        .work-card {
+            display: flex; flex-direction: column;
+            padding: 13px;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            color: var(--ink);
+            transition: transform .25s cubic-bezier(.22, 1, .36, 1), box-shadow .25s, background .25s, border-color .25s;
+        }
+        .work-card:hover {
+            transform: translateY(-3px);
+            background: var(--card-bg-hover);
+            border-color: var(--gold-soft);
+            box-shadow: var(--shadow);
+        }
+        .work-card-main {
+            display: flex; flex-direction: column; gap: 8px;
+            text-decoration: none; color: inherit;
+        }
+        .work-thumb-wrap {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #241a10;
+        }
+        .work-thumb {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+        }
+        .work-card:hover .work-thumb { transform: scale(1.035); }
+        .work-badge {
+            position: absolute; top: 8px; right: 8px;
+            font-size: .72rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            backdrop-filter: blur(6px);
+            white-space: nowrap;
+            background: var(--badge-done-bg);
+            color: var(--badge-done-fg);
+            border: 1px solid currentColor;
+            opacity: .92;
+        }
+        .work-badge.beta {
+            background: var(--badge-beta-bg);
+            color: var(--badge-beta-fg);
+        }
+        .work-badge.old {
+            background: var(--badge-old-bg);
+            color: var(--badge-old-fg);
+        }
+        .work-name {
+            font-weight: 600;
+            color: var(--gold-deep);
+            font-size: .98rem;
+            line-height: 1.4;
+            transition: color .2s;
+        }
+        .work-card:hover .work-name { color: var(--gold); }
+        .work-desc {
+            font-size: .85rem;
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+
+        /* ============ 作品预览：卡片内预览按钮 + iframe 模态框 ============ */
+        .work-preview {
+            position: absolute; left: 10px; bottom: 10px;
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            backdrop-filter: blur(8px);
+            color: var(--gold-deep);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: .2s;
+        }
+        .work-preview:hover { background: var(--card-bg-hover); color: var(--gold); transform: scale(1.08); }
+        .work-preview svg { width: 16px; height: 16px; }
+        .preview-modal {
+            position: fixed; inset: 0; z-index: 20;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+            visibility: hidden; opacity: 0;
+            transition: opacity .25s ease, visibility .25s ease;
+        }
+        .preview-modal.show { visibility: visible; opacity: 1; }
+        .preview-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(25, 18, 6, 0.55);
+            backdrop-filter: blur(6px);
+        }
+        .preview-box {
+            position: relative;
+            width: min(920px, 96vw);
+            height: min(82vh, 760px);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: translateY(14px) scale(.985);
+            transition: transform .28s cubic-bezier(.22, 1, .36, 1);
+        }
+        .preview-modal.show .preview-box { transform: none; }
+        .preview-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--card-border);
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+        }
+        .preview-title {
+            font-weight: 600; color: var(--gold-deep);
+            font-size: .95rem;
+            flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .preview-open {
+            font-size: .8rem; color: var(--gold);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .preview-open:hover { text-decoration: underline; }
+        .preview-close {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            border: 1px solid var(--gold-pale);
+            background: transparent;
+            color: var(--gold-deep);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: .2s;
+            flex-shrink: 0;
+        }
+        .preview-close:hover { background: var(--chip-bg); color: var(--gold); }
+        .preview-close svg { width: 16px; height: 16px; }
+        #previewFrame {
+            width: 100%; flex: 1;
+            border: 0; background: #fff;
+        }
+        body.preview-lock { overflow: hidden; }
+        @media (max-width: 640px) {
+            .preview-modal { padding: 0; }
+            .preview-box {
+                width: 100%; height: 100%;
+                border-radius: 0; border: 0;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .preview-modal, .preview-box, .work-preview { transition: none; }
+        }
+
+        .work-meta {
+            display: flex; flex-wrap: wrap; align-items: center;
+            gap: 6px;
+            margin-top: auto;
+            padding-top: 8px;
+        }
+        .work-domain {
+            font-size: .78rem;
+            color: var(--gold-soft);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            word-break: break-all;
+        }
+        .work-credit {
+            font-size: .7rem;
+            color: var(--gold-soft);
+            opacity: .72;
+            line-height: 1.4;
+            margin-top: 2px;
+            width: 100%;
+        }
+        .work-note {
+            font-size: .74rem;
+            color: var(--badge-beta-fg);
+            line-height: 1.5;
+            margin-top: 6px;
+        }
+        .work-note a {
+            color: var(--gold-deep);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--gold-pale);
+            word-break: break-all;
+        }
+        .work-note a:hover { border-bottom-color: var(--gold); }
+
+        mark {
+            background: var(--mark-bg);
+            color: inherit;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        /* ============ 空状态 ============ */
+        .empty-state {
+            display: none;
+            flex-direction: column; align-items: center;
+            padding: 56px 20px;
+            color: var(--ink-soft);
+        }
+        .empty-state.show { display: flex; }
+        .empty-state svg {
+            width: 44px; height: 44px;
+            color: var(--gold-soft);
+            margin-bottom: 14px;
+            opacity: .7;
+        }
+        .empty-state p { font-size: .95rem; margin-bottom: 16px; }
+        .reset-btn {
+            border: 1px solid var(--gold);
+            color: var(--gold-deep);
+            background: transparent;
+            border-radius: 999px;
+            padding: 7px 20px;
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .reset-btn:hover { background: var(--gold); color: #fff; }
+
+        /* ============ 页脚 ============ */
+        .footer-copy {
+            text-align: center;
+            margin-top: 52px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gold-pale);
+            font-size: .78rem;
+            color: var(--gold-soft);
+            line-height: 1.8;
+        }
+
+        /* ============ 固定按钮 ============ */
+        .left-bottom-bar {
+            position: fixed; left: 24px; bottom: 24px; z-index: 6;
+            display: flex; gap: 10px;
+        }
+        .theme-btn { position: fixed; right: 24px; top: 24px; z-index: 6; }
+        .ui-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(90, 70, 30, .08);
+            color: var(--gold-deep);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+            transition: .2s;
+        }
+        .ui-btn:hover {
+            background: var(--card-bg-hover);
+            border-color: var(--gold-soft);
+            transform: translateY(-2px);
+        }
+        .ui-btn svg { width: 19px; height: 19px; }
+        .lang-btn { font-size: .8rem; font-weight: 600; letter-spacing: .02em; }
+
+        /* ============ 入场动画 ============ */
+        .anim-in {
+            opacity: 0;
+            animation: fadeUp .6s cubic-bezier(.22, 1, .36, 1) forwards;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 640px) {
+            .container { padding: 44px 16px 100px; }
+            .page-head h1 { font-size: 2rem; }
+            .work-grid { grid-template-columns: 1fr; }
+            .works { gap: 32px; }
+            .left-bottom-bar { left: 16px; bottom: 16px; }
+            .theme-btn { right: 16px; top: 16px; }
+        }
+
+        /* 尊重减少动态效果偏好 */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .anim-in { opacity: 1; animation: none; }
+            .work-card, .ui-btn, .tag-chip, #searchInput, .work-thumb { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <div class="bg-dim"></div>
+    <canvas id="goldSandCanvas"></canvas>
+
+    <!-- 固定按钮：返回首页 / 切换语言 / 明暗主题 -->
+    <div class="left-bottom-bar">
+        <a class="ui-btn" href="../index.html" id="backBtn" title="返回首页" aria-label="返回首页">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        </a>
+        <button class="ui-btn lang-btn" id="langBtn" aria-label="切换语言">en</button>
+    </div>
+    <button class="ui-btn theme-btn" id="themeBtn" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg id="themeSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="themeMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <main class="container">
+        <!-- ===== 页头 ===== -->
+        <header class="page-head">
+            <h1 data-lang="worksTitle">我的作品</h1>
+            <div class="head-line" aria-hidden="true"></div>
+            <p class="subtitle" data-lang="worksSubtitle">一些好玩的小东西</p>
+            <div class="stats" id="statsRow" aria-label="作品统计"></div>
+        </header>
+
+        <!-- ===== 工具栏：搜索 / 分类 ===== -->
+        <section class="toolbar" aria-label="作品筛选">
+            <div class="search-box">
+                <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="search" id="searchInput" placeholder="搜索作品名称、简介或域名…" autocomplete="off" spellcheck="false" aria-label="搜索作品">
+                <button class="clear-btn" id="clearBtn" aria-label="清空搜索">×</button>
+            </div>
+            <div class="tag-row" id="tagRow" role="group" aria-label="按分类筛选"></div>
+        </section>
+
+        <!-- ===== 分类区块容器（JS 渲染） ===== -->
+        <div class="works" id="worksSections" aria-label="作品列表"></div>
+
+        <!-- ===== 空状态 ===== -->
+        <div class="empty-state" id="emptyState">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/><path d="M8.5 11h5"/></svg>
+            <p data-lang="emptyTitle">没有找到相关作品</p>
+            <p data-lang="emptyDesc" style="margin-bottom:16px;font-size:.85rem;opacity:.8">换个关键词，或清除筛选条件试试。</p>
+            <button class="reset-btn" id="resetBtn" data-lang="resetBtn">清除筛选</button>
+        </div>
+
+        <!-- ===== 页脚 ===== -->
+        <footer class="footer-copy">
+            <span data-lang="copyright">© 丙午2026 xyLX·Wang · 保留所有权利</span><br>
+            <span data-lang="powered">由 Cloudflare 提供支持</span>
+        </footer>
+    </main>
+
+    <!-- ===== 作品预览模态框（iframe） ===== -->
+    <div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="作品预览">
+        <div class="preview-backdrop"></div>
+        <div class="preview-box">
+            <div class="preview-bar">
+                <span class="preview-title" id="previewTitle">预览</span>
+                <a class="preview-open" id="previewOpen" target="_blank" rel="noopener">新窗口打开</a>
+                <button class="preview-close" id="previewClose" aria-label="关闭预览">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <iframe id="previewFrame" title="作品预览" loading="lazy"></iframe>
+        </div>
+    </div>
+
+    <script>
+        /* ==================== 作品数据（名称/简介/链接均取自原页面） ==================== */
+        const WORKS = [
+            /* 游戏 */
+            { id: "salling", cat: "games", file: "./work/salling.html", domain: "work/salling.html", thumb: "../image/thumbs/salling.png",
+              zh: { name: "碧海夺宝 · 3D 航海小游戏", desc: "扬帆寻宝 · 60 秒夺金连击" },
+              en: { name: "Treasure Voyage · 3D Sailing Game", desc: "Sail, collect gold & chain combos in 60s" } },
+            { id: "chem", cat: "games", file: "./work/chem.html", domain: "work/chem.html", thumb: "../image/thumbs/chem.png",
+              noteUrl: "https://chem-is-try.pages.dev",
+              zh: { name: "元素大陆 · 化学探索", desc: "采集元素 · 合成图鉴 · 造舟返航", note: "这可能不是最新版 · 最新版请至：" },
+              en: { name: "Element Continent · Chemistry Quest", desc: "Collect elements · craft · build your ship", note: "This may not be the latest version. Latest: " } },
+            /* 工具 */
+            { id: "path", cat: "tools", file: "./work/path-studio.html", domain: "work/path-studio.html", thumb: "../image/thumbs/path-studio.png",
+              zh: { name: "Path Studio · 可视化路径绘制", desc: "直线 / 贝塞尔 / 手绘 → SVG path" },
+              en: { name: "Path Studio · Visual Path Drawing", desc: "Lines / Beziers / Freehand → SVG path" } },
+            { id: "clock", cat: "tools", file: "./work/clock.html", domain: "work/clock.html", thumb: "../image/thumbs/clock.png",
+              zh: { name: "横屏时钟", desc: "大字横屏时钟 · 轻触全屏" },
+              en: { name: "Landscape Clock", desc: "Fullscreen clock · tap to go fullscreen" } },
+            { id: "dbos", cat: "tools", file: "./work/dbOS.html", domain: "work/dbOS.html", thumb: "../image/thumbs/dbos.png",
+              zh: { name: "豆包 OS · 桌面模拟", desc: "模拟操作系统 · 登录 / 桌面 / 通知" },
+              en: { name: "Doubao OS · Desktop Simulation", desc: "A playful OS: login / desktop / notifications" } },
+            /* 特效 · 视觉 */
+            { id: "mdbl", cat: "effects", file: "./work/mdbl.html", domain: "work/mdbl.html", thumb: "../image/thumbs/mdbl.png",
+              zh: { name: "曼德勃罗特集 · 无限缩放", desc: "曼德勃罗特 / 朱利亚 · 深缩至 ×1e24" },
+              en: { name: "Mandelbrot · Infinite Zoom", desc: "Mandelbrot / Julia · deep zoom to ×1e24" } },
+            { id: "ting", cat: "effects", file: "./work/ting.html", domain: "work/ting.html", thumb: "../image/thumbs/ting.png",
+              zh: { name: "小园 · 苏式园林", desc: "半亩方塘 · 一檐青山 · 3D 漫游" },
+              en: { name: "Little Garden · Suzhou Garden", desc: "A 3D stroll: pond, eaves & green hills" } },
+            /* Mount3D · 3D 地形 */
+            { id: "mount", cat: "mount", file: "https://mount3d.pages.dev", domain: "mount3d.pages.dev", external: true, thumb: "../image/jiangsu-relief.jpg",
+              credit: { zh: "地形图 © Blue Green Atlas · CC BY 4.0", en: "Map © Blue Green Atlas · CC BY 4.0" },
+              zh: { name: "Mount3D · 地质 3D 地形生成器", desc: "造山带 → 分形噪声 → 水力侵蚀 → 海平面" },
+              en: { name: "Mount3D · Geological 3D Terrain", desc: "Orogeny → noise → erosion → sea level" } },
+            { id: "island", cat: "mount", file: "https://mount3d.pages.dev/island.html", domain: "mount3d.pages.dev", external: true, thumb: "../image/thumbs/island.png", badge: "done",
+              zh: { name: "岛屿地质 3D 地形生成器", desc: "全流程地质演算 · 四季昼夜 · 第一人称探索" },
+              en: { name: "Island Geological Terrain", desc: "Full geo pipeline · seasons · first-person explore" } },
+            { id: "infty", cat: "mount", file: "https://mount3d.pages.dev/infty.html", domain: "mount3d.pages.dev", external: true, thumb: "../image/thumbs/infty.png", badge: "beta",
+              zh: { name: "无限地质 3D 地形生成器", desc: "区块化无限地形 · WASD 漫游" },
+              en: { name: "Infinite Geological Terrain", desc: "Chunked infinite terrain · WASD roaming" } },
+            { id: "forest", cat: "mount", file: "https://mount3d.pages.dev/forest-old.html", domain: "mount3d.pages.dev", external: true, thumb: "../image/thumbs/forest.png", badge: "old",
+              zh: { name: "真实地质 3D 地形生成器", desc: "早期单页有限地形 · 存档保留" },
+              en: { name: "Realistic Geological Terrain", desc: "Early single-page terrain · archived" } }
+        ];
+
+        const CATS = ["games", "tools", "effects", "mount"];
+        const CAT_LABELS = {
+            games:   { zh: "游戏",           en: "Games" },
+            tools:   { zh: "工具",           en: "Tools" },
+            effects: { zh: "特效 · 视觉",    en: "Effects · Visual" },
+            mount:   { zh: "Mount3D · 3D 地形", en: "Mount3D · 3D Terrain" }
+        };
+        const BADGE_LABELS = {
+            done:  { zh: "已完工",   en: "Done" },
+            beta:  { zh: "测试版",   en: "Beta" },
+            old:   { zh: "旧版 · 存档", en: "Old · Archive" }
+        };
+
+        /* ==================== 界面文案（双语） ==================== */
+        const LANG = {
+            zh: {
+                worksTitle: "我的作品",
+                worksSubtitle: "一些好玩的小东西",
+                searchPh: "搜索作品名称、简介或域名…",
+                allCat: "全部",
+                statWorks: "个作品",
+                statCats: "个分类",
+                statExternal: "个外部站点",
+                emptyTitle: "没有找到相关作品",
+                emptyDesc: "换个关键词，或清除筛选条件试试。",
+                resetBtn: "清除筛选",
+                openNew: "新窗口打开",
+                copyright: "© 丙午2026 xyLX·Wang · 保留所有权利",
+                powered: "由 Cloudflare 提供支持",
+                langBtn: "en",
+                docTitle: "我的作品 | xyLX·Wang"
+            },
+            en: {
+                worksTitle: "My Works",
+                worksSubtitle: "A few fun little things",
+                searchPh: "Search by name, description or domain…",
+                allCat: "All",
+                statWorks: "works",
+                statCats: "categories",
+                statExternal: "external sites",
+                emptyTitle: "No works found",
+                emptyDesc: "Try another keyword, or clear the filters.",
+                resetBtn: "Clear filters",
+                openNew: "Open in new tab",
+                copyright: "© 2026 xyLX·Wang · All Rights Reserved",
+                powered: "Powered by Cloudflare",
+                langBtn: "汉",
+                docTitle: "My Works | xyLX·Wang"
+            }
+        };
+
+        let lang = "zh";
+        try { lang = localStorage.getItem("siteLang") || "zh"; } catch (e) { }
+        const t = key => LANG[lang][key];
+
+        /* ==================== 状态 ==================== */
+        const state = { query: "", cat: "all" };
+
+        /* ==================== 工具函数 ==================== */
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+        function highlight(text, q) {
+            const safe = escapeHtml(text);
+            if (!q) return safe;
+            const esc = escapeHtml(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return safe.replace(new RegExp("(" + esc + ")", "gi"), "<mark>$1</mark>");
+        }
+
+        /* ==================== 渲染：统计 ==================== */
+        function renderStats() {
+            const external = WORKS.filter(w => w.external).length;
+            document.getElementById("statsRow").innerHTML =
+                '<span class="stat"><b>' + WORKS.length + '</b> ' + t("statWorks") + "</span>" +
+                '<span class="stat"><b>' + CATS.length + '</b> ' + t("statCats") + "</span>" +
+                '<span class="stat"><b>' + external + '</b> ' + t("statExternal") + "</span>";
+        }
+
+        /* ==================== 渲染：分类筛选 ==================== */
+        function renderCats() {
+            const counts = {};
+            WORKS.forEach(w => counts[w.cat] = (counts[w.cat] || 0) + 1);
+            const wrap = document.getElementById("tagRow");
+            const frag = document.createDocumentFragment();
+            const mk = (key, label, cnt, active) => {
+                const b = document.createElement("button");
+                b.className = "tag-chip" + (active ? " active" : "");
+                b.dataset.cat = key;
+                b.setAttribute("aria-pressed", active ? "true" : "false");
+                b.innerHTML = label + '<span class="cnt">' + cnt + "</span>";
+                return b;
+            };
+            frag.appendChild(mk("all", t("allCat"), WORKS.length, state.cat === "all"));
+            CATS.forEach(c => frag.appendChild(mk(c, CAT_LABELS[c][lang], counts[c], state.cat === c)));
+            wrap.innerHTML = "";
+            wrap.appendChild(frag);
+        }
+
+        /* ==================== 渲染：分类区块 + 作品卡片 ==================== */
+        function buildCard(w, q) {
+            const card = document.createElement("div");
+            card.className = "work-card";
+
+            const main = document.createElement("a");
+            main.className = "work-card-main";
+            main.href = w.file;
+            if (w.external) { main.target = "_blank"; main.rel = "noopener"; }
+            main.setAttribute("aria-label", w[lang].name);
+
+            const tw = document.createElement("span");
+            tw.className = "work-thumb-wrap";
+            const img = document.createElement("img");
+            img.className = "work-thumb";
+            img.src = w.thumb;
+            img.alt = w[lang].name;
+            img.loading = "lazy";
+            tw.appendChild(img);
+            const pv = document.createElement("button");
+            pv.className = "work-preview";
+            pv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            pv.setAttribute("aria-label", (lang === "zh" ? "预览 " : "Preview ") + w[lang].name);
+            pv.title = lang === "zh" ? "预览" : "Preview";
+            pv.addEventListener("click", e => {
+                e.preventDefault();
+                openPreview(w);
+            });
+            tw.appendChild(pv);
+            if (w.badge) {
+                const b = document.createElement("span");
+                b.className = "work-badge" + (w.badge === "beta" ? " beta" : w.badge === "old" ? " old" : "");
+                b.textContent = BADGE_LABELS[w.badge][lang];
+                tw.appendChild(b);
+            }
+            const name = document.createElement("span");
+            name.className = "work-name";
+            name.innerHTML = highlight(w[lang].name, q);
+            const desc = document.createElement("span");
+            desc.className = "work-desc";
+            desc.innerHTML = highlight(w[lang].desc, q);
+            main.append(tw, name, desc);
+            card.appendChild(main);
+
+            const meta = document.createElement("span");
+            meta.className = "work-meta";
+            const dom = document.createElement("span");
+            dom.className = "work-domain";
+            dom.innerHTML = highlight(w.domain, q);
+            meta.appendChild(dom);
+            if (w.credit) {
+                const cr = document.createElement("span");
+                cr.className = "work-credit";
+                cr.textContent = w.credit[lang];
+                meta.appendChild(cr);
+            }
+            card.appendChild(meta);
+
+            if (w.noteUrl) {
+                const note = document.createElement("span");
+                note.className = "work-note";
+                note.innerHTML = highlight(w[lang].note, q) +
+                    ' <a href="' + w.noteUrl + '" target="_blank" rel="noopener">' + w.noteUrl + "</a>";
+                card.appendChild(note);
+            }
+            return card;
+        }
+
+        function renderWorks() {
+            const q = state.query.trim().toLowerCase();
+            const wrap = document.getElementById("worksSections");
+            wrap.innerHTML = "";
+
+            const list = WORKS.filter(w => {
+                if (state.cat !== "all" && w.cat !== state.cat) return false;
+                if (q) {
+                    const hay = (w.zh.name + " " + w.zh.desc + " " + w.domain).toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+
+            if (!list.length) {
+                document.getElementById("emptyState").classList.add("show");
+                return;
+            }
+            document.getElementById("emptyState").classList.remove("show");
+
+            const frag = document.createDocumentFragment();
+            let first = true;
+            CATS.forEach(catKey => {
+                const items = list.filter(w => w.cat === catKey);
+                if (!items.length) return;
+                const sec = document.createElement("section");
+                sec.className = "work-cat anim-in";
+                sec.style.animationDelay = (first ? 0 : 90) + "ms";
+                first = false;
+
+                const h2 = document.createElement("h2");
+                h2.className = "cat-title";
+                const s1 = document.createElement("span");
+                s1.textContent = CAT_LABELS[catKey][lang];
+                const s2 = document.createElement("span");
+                s2.className = "cat-count";
+                s2.textContent = items.length;
+                h2.append(s1, s2);
+
+                const grid = document.createElement("div");
+                grid.className = "work-grid";
+                items.forEach(w => grid.appendChild(buildCard(w, q)));
+
+                sec.append(h2, grid);
+                frag.appendChild(sec);
+            });
+            wrap.appendChild(frag);
+
+            const cards = wrap.querySelectorAll(".work-card");
+            cards.forEach((c, i) => {
+                c.classList.add("anim-in");
+                if (!renderWorks._animated) c.style.animationDelay = (i * 45) + "ms";
+            });
+            renderWorks._animated = true;
+        }
+
+        /* ==================== 渲染总入口 ==================== */
+        function render() {
+            renderStats();
+            renderCats();
+            renderWorks();
+            document.getElementById("clearBtn").classList.toggle("show", state.query.length > 0);
+            const input = document.getElementById("searchInput");
+            if (input.value !== state.query) input.value = state.query;
+        }
+
+        /* ==================== 交互：搜索 / 分类 ==================== */
+        const searchInput = document.getElementById("searchInput");
+        let debounceTimer = null;
+        searchInput.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                state.query = searchInput.value;
+                render();
+            }, 120);
+        });
+
+        document.getElementById("clearBtn").addEventListener("click", () => {
+            state.query = "";
+            render();
+            searchInput.focus();
+        });
+
+        document.getElementById("tagRow").addEventListener("click", e => {
+            const chip = e.target.closest(".tag-chip");
+            if (!chip) return;
+            state.cat = chip.dataset.cat;
+            render();
+        });
+
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            state.query = "";
+            state.cat = "all";
+            render();
+            searchInput.focus();
+        });
+
+        /* 键盘快捷键：/ 聚焦搜索，Esc 清空 */
+        document.addEventListener("keydown", e => {
+            const tag = (e.target.tagName || "").toLowerCase();
+            if (e.key === "/" && tag !== "input" && tag !== "textarea") {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            if (e.key === "Escape" && document.activeElement === searchInput) {
+                state.query = "";
+                render();
+                searchInput.blur();
+            }
+        });
+
+        /* ==================== 双语切换 ==================== */
+        function setLang(l) {
+            lang = l;
+            try { localStorage.setItem("siteLang", l); } catch (e) { }
+            document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+            document.title = t("docTitle");
+            document.getElementById("langBtn").textContent = t("langBtn");
+            searchInput.placeholder = t("searchPh");
+            document.querySelectorAll("[data-lang]").forEach(el => {
+                const key = el.getAttribute("data-lang");
+                if (LANG[l][key] !== undefined) el.textContent = LANG[l][key];
+            });
+            render();
+        }
+        document.getElementById("langBtn").addEventListener("click", () => setLang(lang === "zh" ? "en" : "zh"));
+        setLang(lang);
+
+        /* ==================== 作品 iframe 预览 ==================== */
+        const previewModal = document.getElementById("previewModal");
+        const previewFrame = document.getElementById("previewFrame");
+        const previewTitle = document.getElementById("previewTitle");
+        const previewOpen = document.getElementById("previewOpen");
+        function openPreview(w) {
+            previewTitle.textContent = w[lang].name;
+            previewOpen.textContent = t("openNew");
+            previewOpen.href = w.file;
+            previewFrame.src = w.file;
+            previewModal.classList.add("show");
+            previewModal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("preview-lock");
+            document.getElementById("previewClose").focus();
+        }
+        function closePreview() {
+            if (!previewModal.classList.contains("show")) return;
+            previewModal.classList.remove("show");
+            previewModal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("preview-lock");
+            previewFrame.src = "about:blank";
+        }
+        document.getElementById("previewClose").addEventListener("click", closePreview);
+        previewModal.querySelector(".preview-backdrop").addEventListener("click", closePreview);
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape" && previewModal.classList.contains("show") && document.activeElement !== searchInput) {
+                closePreview();
+            }
+        });
+
+        /* ==================== 明暗主题 ==================== */
+        const themeBtn = document.getElementById("themeBtn");
+        const themeSun = document.getElementById("themeSun");
+        const themeMoon = document.getElementById("themeMoon");
+        function updateThemeIcon() {
+            const dark = document.documentElement.getAttribute("data-theme") === "dark";
+            themeSun.style.display = dark ? "block" : "none";
+            themeMoon.style.display = dark ? "none" : "block";
+        }
+        themeBtn.addEventListener("click", () => {
+            const cur = document.documentElement.getAttribute("data-theme");
+            const next = cur === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            try { localStorage.setItem("siteTheme", next); } catch (e) { }
+            updateThemeIcon();
+        });
+        updateThemeIcon();
+
+        /* ==================== 金沙粒子（升级：鼠标拨动 + 数量自适应 + DPR 高清） ==================== */
+        (function () {
+            const canvas = document.getElementById("goldSandCanvas");
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext("2d");
+            const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            let W = 0, H = 0, particles = [];
+            let mouse = { x: null, y: null };
+            let rafId = null;
+            let resizeTimer = null;
+            const colors = ["#fff1b8", "#ffdd70", "#f7c84e", "#e8b435", "#d4a028", "#c28c1c"];
+
+            function resize() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth;
+                H = window.innerHeight;
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                canvas.style.width = W + "px";
+                canvas.style.height = H + "px";
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                createParticles();
+            }
+            function createParticles() {
+                const count = reduced ? 0 : Math.max(50, Math.min(240, Math.round(W * H / 9000)));
+                particles = new Array(count);
+                for (let i = 0; i < count; i++) {
+                    particles[i] = {
+                        x: Math.random() * W,
+                        y: Math.random() * H,
+                        size: Math.random() * 3.2 + 0.4,
+                        sx: (Math.random() - 0.5) * 0.35,
+                        sy: (Math.random() - 0.5) * 0.25,
+                        color: colors[(Math.random() * colors.length) | 0],
+                        alpha: Math.random() * 0.7 + 0.15,
+                        tw: Math.random() * 0.018 + 0.004
+                    };
+                }
+            }
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                const R = 110, R2 = R * R;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.alpha += p.tw;
+                    if (p.alpha > 0.85 || p.alpha < 0.12) p.tw = -p.tw;
+                    let dx = 0, dy = 0;
+                    if (mouse.x !== null) {
+                        const mx = p.x - mouse.x, my = p.y - mouse.y;
+                        const d2 = mx * mx + my * my;
+                        if (d2 < R2 && d2 > 0.01) {
+                            const d = Math.sqrt(d2);
+                            const force = (R - d) / R * 0.7;
+                            dx = mx / d * force;
+                            dy = my / d * force;
+                        }
+                    }
+                    p.x += p.sx + dx;
+                    p.y += p.sy + dy;
+                    if (p.x > W) p.x = 0; else if (p.x < 0) p.x = W;
+                    if (p.y > H) p.y = 0; else if (p.y < 0) p.y = H;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                rafId = requestAnimationFrame(animate);
+            }
+            window.addEventListener("pointermove", e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            }, { passive: true });
+            window.addEventListener("pointerleave", () => { mouse.x = null; mouse.y = null; });
+            window.addEventListener("resize", () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(resize, 200);
+            });
+            resize();
+            if (!reduced) animate();
+        })();
+
+        /* ==================== 控制台彩蛋 ==================== */
+        console.log("%c📦 这里是作品页面", "font-size:18px;color:#946c22;");
+        console.log("提示：按 / 快速搜索作品；右上角可切换明暗主题；返回首页 index.html 还有隐藏彩蛋。");
+    </script>
+</body>
+</html>
