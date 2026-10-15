@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>碧海夺宝 · 3D 航海小游戏</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2314475f'/%3E%3Cpath d='M20 68h60v10H20z' fill='%23ffc93c'/%3E%3Cpath d='M30 64L50 28l20 36z' fill='%23f6efe0'/%3E%3Cpath d='M48 28h4v38h-4z' fill='%23a97142'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=ZCOOL+KuaiLe&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#0b2236}
+body{font-family:'ZCOOL KuaiLe','PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:#eef7fc;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#sceneRoot{position:fixed;inset:0}
+#sceneRoot canvas{display:block;width:100%;height:100%}
+
+/* ===== 通用面板 ===== */
+.screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(ellipse at 50% 130%,rgba(9,26,44,0) 20%,rgba(9,26,44,0.62) 100%);transition:opacity .3s}
+.screen.hidden{opacity:0;pointer-events:none}
+.panel{width:min(520px,92vw);max-height:92vh;overflow:auto;background:linear-gradient(165deg,rgba(13,40,66,0.93),rgba(8,24,42,0.95));border:1px solid rgba(255,255,255,0.15);border-radius:22px;padding:32px 32px 28px;box-shadow:0 26px 70px rgba(0,10,25,0.6);text-align:center}
+.title{font-size:50px;letter-spacing:8px;color:#ffd34d;line-height:1.15;text-shadow:0 3px 0 rgba(120,70,10,.55),0 0 26px rgba(255,200,80,.35)}
+.title.small{font-size:34px;letter-spacing:6px}
+.subtitle{color:#a9d6ef;font-size:15px;letter-spacing:4px;margin:10px 0 22px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;text-align:left;font-size:14px;color:#cfe6f5;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 20px;margin:0 auto 20px;max-width:420px}
+.kv b{color:#ffd34d;font-weight:400;white-space:nowrap}
+.objline{font-size:14px;color:#8fb8d6;margin:-8px 0 18px;line-height:1.7}
+.bestline{font-size:14px;color:#8fb8d6;margin-bottom:22px}
+.bestline b{color:#ffd34d}
+.btn{display:inline-block;border:none;cursor:pointer;font-family:inherit;font-size:20px;letter-spacing:5px;color:#12314c;background:linear-gradient(180deg,#ffdf7e,#ffc93c);border-radius:999px;padding:13px 52px;box-shadow:0 6px 0 #c98a14,0 12px 26px rgba(255,190,60,.28);transition:transform .12s,box-shadow .12s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c98a14,0 6px 14px rgba(255,190,60,.22)}
+.btnrow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn.ghost{background:rgba(255,255,255,.1);color:#dceefb;box-shadow:0 4px 0 rgba(255,255,255,.14);font-size:16px;padding:12px 34px;letter-spacing:3px}
+.btn.ghost:active{box-shadow:0 1px 0 rgba(255,255,255,.14)}
+.record{display:inline-block;margin:0 0 14px;background:linear-gradient(180deg,#ff9d5c,#ff6b3d);color:#fff;font-size:14px;letter-spacing:3px;padding:6px 20px;border-radius:999px;box-shadow:0 4px 14px rgba(255,107,61,.4)}
+.finalscore{font-size:64px;color:#ffd34d;text-shadow:0 3px 0 rgba(120,70,10,.5),0 0 30px rgba(255,200,80,.35);margin:6px 0 2px}
+.finalline{font-size:15px;color:#a9d6ef;margin-bottom:20px}
+
+/* ===== HUD ===== */
+#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+.hud-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;gap:10px}
+.hud-left .lbl{font-size:13px;letter-spacing:3px;color:#9cc6e2}
+.score-val{font-size:36px;color:#fff;text-shadow:0 2px 10px rgba(0,20,40,.6);line-height:1.1}
+.combo{display:inline-block;margin-top:6px;background:rgba(255,190,50,.94);color:#4a2d00;font-size:15px;padding:3px 14px;border-radius:999px;box-shadow:0 4px 12px rgba(255,180,40,.35)}
+.combo.hidden{display:none}
+.combo.pop{animation:comboPop .35s ease}
+@keyframes comboPop{0%{transform:scale(.55)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+.hud-center{display:flex;flex-direction:column;align-items:center;gap:5px;width:min(330px,36vw);padding-top:4px}
+#timeBar{width:100%;height:11px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+#timeFill{height:100%;width:100%;border-radius:999px;background:linear-gradient(90deg,#ffe9a8,#ffc93c)}
+#timeBar.low #timeFill{background:linear-gradient(90deg,#ffb199,#ff5e5e);animation:blink .5s steps(1) infinite}
+@keyframes blink{50%{opacity:.55}}
+#timeText{font-size:14px;color:#dff1fb;letter-spacing:1px}
+.hud-right{display:flex;align-items:center;gap:9px}
+.lives{display:flex;gap:4px;filter:drop-shadow(0 2px 4px rgba(0,20,40,.6))}
+.heart{width:25px;height:25px;transition:opacity .3s}
+.heart.off{opacity:.22}
+.icon-btn{pointer-events:auto;width:42px;height:42px;border-radius:13px;border:1px solid rgba(255,255,255,.2);background:rgba(10,32,54,.55);color:#dff1fb;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn:active{transform:scale(.93)}
+.boost-wrap{position:absolute;left:18px;bottom:26px;width:150px}
+.boost-lbl{font-size:12px;letter-spacing:3px;color:#9cc6e2;margin-bottom:5px;text-shadow:0 1px 4px rgba(0,20,40,.6)}
+#boostBar{height:9px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+#boostFill{height:100%;width:100%;background:linear-gradient(90deg,#7fe0ff,#3fb8ff)}
+#popups{position:fixed;inset:0;z-index:15;pointer-events:none;overflow:hidden}
+.popup{position:absolute;transform:translate(-50%,-50%);color:#ffd76a;font-size:28px;text-shadow:0 2px 8px rgba(0,30,60,.75);animation:floatUp .9s ease-out forwards}
+@keyframes floatUp{0%{opacity:0;transform:translate(-50%,-20%)}14%{opacity:1}100%{opacity:0;transform:translate(-50%,-170%)}}
+
+/* ===== 触屏控制 ===== */
+#touchWrap{position:fixed;inset:0;z-index:8;pointer-events:none}
+#joyZone{position:absolute;left:0;bottom:0;width:62%;height:62%;pointer-events:auto;touch-action:none}
+#joyBase{position:absolute;width:124px;height:124px;border-radius:50%;border:2px solid rgba(255,255,255,.38);background:rgba(255,255,255,.09);transform:translate(-50%,-50%);opacity:0;transition:opacity .15s}
+#joyBase.on{opacity:1}
+#joyKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:rgba(255,220,130,.88);transform:translate(-50%,-50%);box-shadow:0 5px 12px rgba(0,20,40,.45)}
+#btnBoost{position:absolute;right:26px;bottom:32px;width:92px;height:92px;border-radius:50%;pointer-events:auto;touch-action:none;border:2px solid rgba(255,255,255,.4);background:radial-gradient(circle at 35% 30%,rgba(130,225,255,.9),rgba(40,140,220,.8));color:#fff;font-family:inherit;font-size:15px;letter-spacing:2px;cursor:pointer;box-shadow:0 10px 24px rgba(0,40,90,.45)}
+#btnBoost:active{transform:scale(.94)}
+
+/* ===== 错误提示 ===== */
+#errMsg .panel{width:min(430px,90vw)}
+#errText{color:#cfe6f5;font-size:14px;margin-top:14px;line-height:1.8}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="sceneRoot"></div>
+
+<!-- ===== 开始界面 ===== -->
+<div id="screenStart" class="screen">
+  <div class="panel">
+    <div class="title">碧海夺宝</div>
+    <div class="subtitle">扬帆寻宝 · 乘风破浪</div>
+    <div class="kv">
+      <b>W / ↑</b><span>前进</span>
+      <b>S / ↓</b><span>后退</span>
+      <b>A / D</b><span>左右转向</span>
+      <b>空格</b><span>加速（消耗能量）</span>
+      <b>触屏</b><span>左侧摇杆 + 右下加速键</span>
+    </div>
+    <div class="objline">60 秒内尽量收集金币，避开礁石。<br>连续收集触发连击，得分成倍增长。</div>
+    <div class="bestline">最高纪录 <b id="menuBest">0</b></div>
+    <button id="btnStart" class="btn">起　航</button>
+  </div>
+</div>
+
+<!-- ===== 暂停界面 ===== -->
+<div id="screenPause" class="screen hidden">
+  <div class="panel">
+    <div class="title small">已暂停</div>
+    <div class="subtitle" style="margin-bottom:26px">风平浪静，稍作歇息</div>
+    <div class="btnrow">
+      <button id="btnResume" class="btn">继　续</button>
+      <button id="btnRestart" class="btn ghost">重新开始</button>
+      <button id="btnMenu" class="btn ghost">返回码头</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 结算界面 ===== -->
+<div id="screenOver" class="screen hidden">
+  <div class="panel">
+    <div class="title small">航行结束</div>
+    <div class="finalscore" id="finalScore">0</div>
+    <div class="finalline" id="finalCoins">收集金币 0 枚</div>
+    <div id="recordLine" class="record hidden">新 纪 录</div>
+    <div class="bestline" style="margin-bottom:24px">最高纪录 <b id="bestScore">0</b></div>
+    <div class="btnrow">
+      <button id="btnOverRestart" class="btn">再战一程</button>
+      <button id="btnOverMenu" class="btn ghost">返回码头</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="lbl">得分</div>
+      <div class="score-val" id="scoreVal">0</div>
+      <div id="comboEl" class="combo hidden">x2</div>
+    </div>
+    <div class="hud-center">
+      <div id="timeBar"><div id="timeFill"></div></div>
+      <div id="timeText">60</div>
+    </div>
+    <div class="hud-right">
+      <div class="lives" id="lives"></div>
+      <button id="btnSound" class="icon-btn" aria-label="声音开关"></button>
+      <button id="btnPause" class="icon-btn" aria-label="暂停"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+    </div>
+  </div>
+  <div class="boost-wrap">
+    <div class="boost-lbl">加 速 能 量</div>
+    <div id="boostBar"><div id="boostFill"></div></div>
+  </div>
+</div>
+
+<div id="popups"></div>
+
+<!-- ===== 触屏控制 ===== -->
+<div id="touchWrap" class="hidden">
+  <div id="joyZone">
+    <div id="joyBase"><div id="joyKnob"></div></div>
+  </div>
+  <button id="btnBoost">加速</button>
+</div>
+
+<!-- ===== 加载失败提示 ===== -->
+<div id="errMsg" class="screen hidden">
+  <div class="panel">
+    <div class="title small">加载失败</div>
+    <div id="errText"></div>
+  </div>
+</div>
+
+<script>
+/* ========== CDN 加载器（jsDelivr 优先，依次回退） ========== */
+(function () {
+  'use strict';
+  var THREE_URLS = [
+    'https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js',
+    'https://unpkg.com/three@0.147.0/build/three.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/three.js/0.147.0/three.min.js'
+  ];
+  var WATER_URLS = [
+    'https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/objects/Water.js',
+    'https://unpkg.com/three@0.147.0/examples/js/objects/Water.js'
+  ];
+  function showFatal(msg) {
+    document.getElementById('errText').textContent = msg;
+    document.getElementById('errMsg').classList.remove('hidden');
+  }
+  function loadSeq(urls, onDone, onFail) {
+    var i = 0;
+    function next() {
+      if (i >= urls.length) { onFail(); return; }
+      var s = document.createElement('script');
+      s.src = urls[i++];
+      s.onload = onDone;
+      s.onerror = next;
+      document.head.appendChild(s);
+    }
+    next();
+  }
+  loadSeq(THREE_URLS, function () {
+    loadSeq(WATER_URLS, function () {
+      try { boot(); }
+      catch (e) { showFatal('游戏初始化出错：' + e.message); }
+    }, function () {
+      showFatal('水面特效库（Water.js）加载失败，请检查网络后刷新页面。');
+    });
+  }, function () {
+    showFatal('Three.js 加载失败，请检查网络后刷新页面。');
+  });
+})();
+</script>
+
+<script>
+function boot() {
+  'use strict';
+  // ===== 基础 =====
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const GAME_TIME = 60;
+  const $ = s => document.querySelector(s);
+
+  // ===== 渲染器 / 场景 / 相机 =====
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.8 : 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0xdcf2fa, 1);
+  document.getElementById('sceneRoot').appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xdcf2fa, 480, 1200);
+
+  const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 3000);
+  camera.position.set(0, 8.5, 30);
+
+  // ===== 光照：主光(太阳) + 天空补光 + 微量环境 =====
+  const sunDir = new THREE.Vector3(0.42, 0.6, 0.38).normalize();
+  const sunLight = new THREE.DirectionalLight(0xfff1cf, 1.45);
+  sunLight.position.copy(sunDir).multiplyScalar(500);
+  scene.add(sunLight);
+  scene.add(new THREE.HemisphereLight(0xcfe8f6, 0x3a6a8a, 0.95));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.1));
+
+  // ===== 纹理工具 =====
+  function makeRadialTexture(size, c0, c1) {
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(size / 2, size / 2, size * 0.02, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, c0); grad.addColorStop(1, c1);
+    g.fillStyle = grad; g.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(c);
+  }
+  function makeFallbackNormals() {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#8080ff'; g.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 220; i++) {
+      const x = Math.random() * 256, y = Math.random() * 256, r = 8 + Math.random() * 30;
+      const v = 110 + (Math.random() * 60 | 0);
+      g.strokeStyle = 'rgba(' + v + ',' + (v + 30) + ',255,' + (0.15 + Math.random() * 0.3).toFixed(2) + ')';
+      g.lineWidth = 1 + Math.random() * 3;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  const blobTex = makeRadialTexture(128, 'rgba(8,28,48,0.55)', 'rgba(8,28,48,0)');
+  function blobShadow(size) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size),
+      new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.85 }));
+    m.rotation.x = -Math.PI / 2;
+    return m;
+  }
+  const glowTex = makeRadialTexture(256, 'rgba(255,244,214,1)', 'rgba(255,244,214,0)');
+
+  // ===== 天空穹顶 + 太阳 + 云 =====
+  {
+    const c = document.createElement('canvas'); c.width = 16; c.height = 512;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 0, 512);
+    grad.addColorStop(0, '#3d7ed0'); grad.addColorStop(0.5, '#8fc9ec');
+    grad.addColorStop(0.8, '#d6eef8'); grad.addColorStop(1, '#dcf2fa');
+    g.fillStyle = grad; g.fillRect(0, 0, 16, 512);
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(1500, 32, 16),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), side: THREE.BackSide, fog: false, depthWrite: false }));
+    scene.add(sky);
+  }
+  {
+    const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, color: 0xfff3c4, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 }));
+    sunSprite.position.copy(sunDir).multiplyScalar(520);
+    sunSprite.scale.set(220, 220, 1);
+    scene.add(sunSprite);
+  }
+  const clouds = [];
+  function makeCloud() {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const n = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(8 + Math.random() * 14, 8, 6), mat);
+      m.position.set((Math.random() - 0.5) * 30, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 18);
+      m.scale.y = 0.55;
+      g.add(m);
+    }
+    const a = Math.random() * Math.PI * 2, r = 420 + Math.random() * 380, h = 140 + Math.random() * 110;
+    g.position.set(Math.cos(a) * r, h, Math.sin(a) * r);
+    scene.add(g);
+    return g;
+  }
+  for (let i = 0; i < 5; i++) clouds.push(makeCloud());
+
+  // ===== 水面（Water.js：自动反射） =====
+  let water = null;
+  function initWater(normalTex) {
+    water = new THREE.Water(
+      new THREE.PlaneGeometry(2200, 2200, isTouch ? 150 : 220),
+      {
+        textureWidth: 512, textureHeight: 512,
+        waterNormals: normalTex,
+        sunDirection: sunDir.clone(),
+        sunColor: 0xfff1cf,
+        waterColor: 0x1e6f9e,
+        distortionScale: 3.6,
+        fog: true,
+        alpha: 1.0
+      });
+    water.rotation.x = -Math.PI / 2;
+    water.material.fog = true;
+    scene.add(water);
+  }
+  initWater(makeFallbackNormals()); // 先用程序化法线，保证首帧即有水面
+  new THREE.TextureLoader().load('https://threejs.org/examples/textures/waternormals.jpg', tex => {
+    if (!water) return;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    water.material.uniforms.normalSampler.value = tex; // 换成官方法线贴图
+  });
+
+  // ===== 岛屿 =====
+  function makeIsland(opts) {
+    const g = new THREE.Group();
+    const s = opts.scale || 1;
+    const sand = new THREE.Mesh(new THREE.CylinderGeometry(7 * s, 9 * s, 2.6 * s, 22),
+      new THREE.MeshLambertMaterial({ color: 0xdcc78c }));
+    sand.position.y = -0.5 * s;
+    const grass = new THREE.Mesh(new THREE.CylinderGeometry(6 * s, 7 * s, 1.1 * s, 22),
+      new THREE.MeshLambertMaterial({ color: 0x5aa353 }));
+    grass.position.y = 0.9 * s;
+    g.add(sand, grass);
+    const nt = opts.trees || 4;
+    for (let i = 0; i < nt; i++) {
+      const a = Math.random() * Math.PI * 2, d = Math.random() * 3.6 * s;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * s, 0.24 * s, 1.2 * s, 6),
+        new THREE.MeshLambertMaterial({ color: 0x8a5a2e }));
+      trunk.position.set(Math.cos(a) * d, 1.4 * s, Math.sin(a) * d);
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(1.5 * s, 2.6 * s, 7),
+        new THREE.MeshLambertMaterial({ color: 0x2f7d3a }));
+      crown.position.set(Math.cos(a) * d, 3.0 * s, Math.sin(a) * d);
+      g.add(trunk, crown);
+    }
+    if (opts.lighthouse) {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.75 * s, 0.95 * s, 5.2 * s, 10),
+        new THREE.MeshLambertMaterial({ color: 0xf4f1ea }));
+      base.position.y = 4.2 * s;
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.8 * s, 0.8 * s, 0.9 * s, 10),
+        new THREE.MeshLambertMaterial({ color: 0xd94f4a }));
+      band.position.y = 3.0 * s;
+      const top = new THREE.Mesh(new THREE.ConeGeometry(1.0 * s, 1.6 * s, 10),
+        new THREE.MeshLambertMaterial({ color: 0xd94f4a }));
+      top.position.y = 7.1 * s;
+      const lamp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: glowTex, color: 0xffe9a8, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.95, depthWrite: false }));
+      lamp.scale.set(4.2 * s, 4.2 * s, 1); lamp.position.y = 5.6 * s;
+      g.add(base, band, top, lamp);
+    }
+    g.position.set(opts.x, 0, opts.z);
+    scene.add(g);
+  }
+  makeIsland({ x: 0, z: -285, scale: 1.5, trees: 5, lighthouse: true });
+  makeIsland({ x: -245, z: 140, scale: 1.1, trees: 3 });
+  makeIsland({ x: 258, z: 152, scale: 1.2, trees: 4 });
+  makeIsland({ x: -278, z: -115, scale: 0.9, trees: 2 });
+  makeIsland({ x: 268, z: -108, scale: 1.0, trees: 3 });
+  makeIsland({ x: 185, z: -255, scale: 0.8, trees: 2 });
+
+  // ===== 礁石 =====
+  const rocks = [];
+  function makeRock() {
+    const rad = 1.5 + Math.random() * 0.9;
+    const g = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0),
+      new THREE.MeshLambertMaterial({ color: 0x5f5b52, flatShading: true }));
+    g.scale.set(rad, rad * 0.72, rad);
+    g.position.y = 0.5;
+    const sh = blobShadow(rad * 3.6); sh.position.y = 0.05;
+    const grp = new THREE.Group();
+    grp.add(g, sh);
+    grp.userData.radius = rad * 0.9 + 2.1;
+    return grp;
+  }
+  {
+    const placed = [];
+    let guard = 0;
+    while (placed.length < 12 && guard++ < 240) {
+      const a = Math.random() * Math.PI * 2, r = 26 + Math.random() * 190;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (placed.some(p => (p.x - x) ** 2 + (p.z - z) ** 2 < 95)) continue;
+      placed.push({ x, z });
+      const rk = makeRock();
+      rk.position.set(x, 0, z);
+      rocks.push(rk);
+      scene.add(rk);
+    }
+  }
+
+  // ===== 金币 =====
+  const coinGeom = new THREE.CylinderGeometry(0.85, 0.85, 0.22, 20);
+  const coinMat = new THREE.MeshStandardMaterial({ color: 0xffc93c, metalness: 0.8, roughness: 0.3 });
+  const coins = [];
+  function makeCoin() {
+    const grp = new THREE.Group();
+    grp.add(new THREE.Mesh(coinGeom, coinMat));
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, color: 0xffd76a, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.5, depthWrite: false }));
+    halo.scale.set(4.4, 4.4, 1);
+    grp.add(halo);
+    grp.userData = { active: false, phase: Math.random() * Math.PI * 2 };
+    scene.add(grp);
+    coins.push(grp);
+  }
+  for (let i = 0; i < 8; i++) makeCoin();
+  function spawnCoin(c) {
+    let x = 0, z = 0, tries = 0;
+    do {
+      const a = Math.random() * Math.PI * 2, r = 22 + Math.random() * 195;
+      x = Math.cos(a) * r; z = Math.sin(a) * r; tries++;
+    } while (tries < 60 && (Math.hypot(x - bx, z - bz) < 24 ||
+      rocks.some(rk => Math.hypot(x - rk.position.x, z - rk.position.z) < 6)));
+    c.position.set(x, 1.15, z);
+    c.userData.active = true;
+  }
+
+  // ===== 小船 =====
+  let boatFlag = null;
+  let boatSail = null;
+  function makeBoat() {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0xb07a45 });
+    const woodDark = new THREE.MeshLambertMaterial({ color: 0x7d4e22 });
+    const white = new THREE.MeshLambertMaterial({ color: 0xfdf6e8 });
+    const red = new THREE.MeshLambertMaterial({ color: 0xe2574c });
+    const teal = new THREE.MeshLambertMaterial({ color: 0x2f8f93 });
+    // 船体 + 船首
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.1, 5.2), wood));
+    const bow = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.8, 4), wood);
+    bow.rotation.x = -Math.PI / 2; bow.scale.y = 0.55; bow.position.set(0, -0.1, 3.25);
+    g.add(bow);
+    // 舷缘
+    [-1.2, 1.2].forEach(sx => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 5.0), woodDark);
+      rail.position.set(sx, 0.55, 0);
+      g.add(rail);
+    });
+    // 甲板
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 4.2), new THREE.MeshLambertMaterial({ color: 0xcd9b60 }));
+    deck.position.y = 0.52;
+    g.add(deck);
+    // 船舱
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.0, 1.7), white);
+    cabin.position.set(0, 1.1, -0.5);
+    g.add(cabin);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.2, 1.9), red);
+    roof.position.set(0, 1.7, -0.5);
+    g.add(roof);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.12), teal);
+    win.position.set(0, 1.05, 0.36);
+    g.add(win);
+    // 桅杆 + 帆
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 4.8, 6), woodDark);
+    mast.position.set(0, 3.3, 1.1);
+    g.add(mast);
+    const sailShape = new THREE.Shape();
+    sailShape.moveTo(0, 0); sailShape.lineTo(2.0, 0); sailShape.lineTo(0, 2.8); sailShape.closePath();
+    boatSail = new THREE.Mesh(new THREE.ShapeGeometry(sailShape), white);
+    boatSail.material.side = THREE.DoubleSide;
+    boatSail.position.set(0.2, 1.35, 1.1);
+    boatSail.rotation.y = 0.35;
+    g.add(boatSail);
+    // 旗
+    boatFlag = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.75, 3), red);
+    boatFlag.rotation.x = Math.PI / 2;
+    boatFlag.position.set(0, 5.3, 1.1);
+    g.add(boatFlag);
+    // 船底软阴影
+    const sh = blobShadow(6.4);
+    sh.position.y = -0.62;
+    g.add(sh);
+    g.position.y = 0.6;
+    scene.add(g);
+    return g;
+  }
+  const boat = makeBoat();
+
+  // ===== 金币爆裂粒子 =====
+  const partTex = makeRadialTexture(64, 'rgba(255,224,130,1)', 'rgba(255,224,130,0)');
+  const particles = [];
+  for (let i = 0; i < 14; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: partTex, color: 0xffd76a, blending: THREE.AdditiveBlending,
+      transparent: true, depthWrite: false, opacity: 0 }));
+    sp.visible = false;
+    scene.add(sp);
+    particles.push({ sp: sp, vx: 0, vy: 0, vz: 0, life: 0, max: 1 });
+  }
+  let pi = 0;
+  function burst(x, y, z, n) {
+    for (let i = 0; i < n; i++) {
+      const p = particles[pi]; pi = (pi + 1) % particles.length;
+      const a = Math.random() * Math.PI * 2;
+      p.sp.position.set(x, y, z);
+      p.vx = Math.cos(a) * (2 + Math.random() * 4);
+      p.vz = Math.sin(a) * (2 + Math.random() * 4);
+      p.vy = 1.5 + Math.random() * 3.5;
+      p.life = p.max = 0.7 + Math.random() * 0.2;
+      p.sp.visible = true;
+      p.sp.scale.set(1.4, 1.4, 1);
+    }
+  }
+
+  // ===== 船尾浪花 =====
+  const WAKE_N = 90;
+  const wakePos = new Float32Array(WAKE_N * 3);
+  const wakeCol = new Float32Array(WAKE_N * 3);
+  const wakeGeom = new THREE.BufferGeometry();
+  wakeGeom.setAttribute('position', new THREE.BufferAttribute(wakePos, 3));
+  wakeGeom.setAttribute('color', new THREE.BufferAttribute(wakeCol, 3));
+  wakeGeom.setDrawRange(0, 0);
+  const wake = new THREE.Points(wakeGeom, new THREE.PointsMaterial({
+    size: 0.7, vertexColors: true, transparent: true, opacity: 0.6,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+  scene.add(wake);
+  const wakePts = [];
+
+  // ===== 音频（程序化音效，无需素材文件） =====
+  let AC = null, muted = false;
+  function ac() {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  }
+  function tone(f, dur, type, vol, slide, delay) {
+    if (muted) return;
+    const a = ac(), t0 = a.currentTime + (delay || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'triangle';
+    o.frequency.setValueAtTime(Math.max(30, f), t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), t0 + dur);
+    g.gain.setValueAtTime(vol === undefined ? 0.16 : vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  function noise(dur, vol, f0, f1) {
+    if (muted) return;
+    const a = ac(), t0 = a.currentTime;
+    const len = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, len, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const f = a.createBiquadFilter(); f.type = 'lowpass';
+    f.frequency.setValueAtTime(f0, t0);
+    f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t0 + dur);
+    const g = a.createGain();
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(a.destination);
+    src.start(t0);
+  }
+  const sfx = {
+    start() { tone(523, 0.14); tone(659, 0.14, 'triangle', 0.14, 0, 0.1); tone(784, 0.24, 'triangle', 0.14, 0, 0.2); },
+    coin(c) { const k = 1 + Math.min(c, 8) * 0.09; tone(760 * k, 0.08, 'sine', 0.15); tone(1140 * k, 0.16, 'sine', 0.13, 0, 0.06); },
+    hit() { noise(0.4, 0.28, 500, 120); tone(130, 0.35, 'sawtooth', 0.18, -70); },
+    boost() { noise(0.5, 0.1, 600, 1600); },
+    tick() { tone(920, 0.05, 'square', 0.07); },
+    over() { tone(660, 0.16); tone(523, 0.16, 'triangle', 0.15, 0, 0.15); tone(392, 0.2, 'triangle', 0.15, 0, 0.3); tone(262, 0.42, 'triangle', 0.16, 0, 0.45); },
+    click() { tone(700, 0.05, 'sine', 0.1); }
+  };
+
+  // ===== 键盘输入 =====
+  const keys = {};
+  let touchThrust = 0, touchSteer = 0;
+  window.addEventListener('keydown', e => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === ' ' || e.key === 'Space') { if (state === 'playing') boostOn = true; }
+    if (e.key === 'Escape' || e.key.toLowerCase() === 'p') togglePause();
+    if (e.key === 'Enter' && (state === 'menu' || state === 'over')) startGame();
+  });
+  window.addEventListener('keyup', e => {
+    keys[e.key.toLowerCase()] = false;
+    if (e.key === ' ' || e.key === 'Space') boostOn = false;
+  });
+  window.addEventListener('blur', () => { boostOn = false; touchThrust = 0; touchSteer = 0; });
+
+  // ===== 触屏：摇杆 + 加速键 =====
+  const joyZone = $('#joyZone'), joyBase = $('#joyBase'), joyKnob = $('#joyKnob');
+  let joyActive = false, joyId = null;
+  joyZone.addEventListener('pointerdown', e => {
+    if (state !== 'playing') return;
+    joyActive = true; joyId = e.pointerId;
+    const r = joyZone.getBoundingClientRect();
+    joyBase.style.left = (e.clientX - r.left) + 'px';
+    joyBase.style.top = (e.clientY - r.top) + 'px';
+    joyBase.classList.add('on');
+    joyKnob.style.transform = 'translate(-50%,-50%)';
+    joyZone.setPointerCapture(e.pointerId);
+  });
+  joyZone.addEventListener('pointermove', e => {
+    if (!joyActive || e.pointerId !== joyId) return;
+    const r = joyZone.getBoundingClientRect();
+    let dx = e.clientX - r.left - parseFloat(joyBase.style.left);
+    let dy = e.clientY - r.top - parseFloat(joyBase.style.top);
+    const max = 46, d = Math.hypot(dx, dy);
+    if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+    joyKnob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+    touchThrust = Math.max(-1, Math.min(1, -dy / max));
+    touchSteer = Math.max(-1, Math.min(1, dx / max));
+  });
+  function joyEnd(e) {
+    if (e.pointerId !== joyId) return;
+    joyActive = false; joyId = null;
+    joyBase.classList.remove('on');
+    touchThrust = 0; touchSteer = 0;
+  }
+  joyZone.addEventListener('pointerup', joyEnd);
+  joyZone.addEventListener('pointercancel', joyEnd);
+  $('#btnBoost').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (state === 'playing') boostOn = true;
+  });
+  window.addEventListener('pointerup', () => { boostOn = false; });
+  window.addEventListener('pointercancel', () => { boostOn = false; });
+  // ===== 游戏状态 =====
+  let state = 'menu'; // menu | playing | paused | over
+  let score = 0, combo = 1, comboT = 0, lives = 3, timeLeft = GAME_TIME, coinsGot = 0;
+  let best = 0;
+  try { best = parseInt(localStorage.getItem('ocbTreasure')) || 0; } catch (e) { /* 隐私模式忽略 */ }
+  let bx = 0, bz = 8, heading = Math.PI, speed = 0, boostMeter = 1, boostOn = false;
+  let invincT = 0, shakeT = 0, animT = 0, wakeTimer = 0, lastTickSec = 99;
+  const fw = { x: Math.sin(heading), z: Math.cos(heading) };
+  const camPos = camera.position.clone();
+  const lookAt = new THREE.Vector3(0, 1.6, 0);
+
+  // ===== HUD 元素 =====
+  const scoreEl = $('#scoreVal'), comboEl = $('#comboEl'), timeBar = $('#timeBar');
+  const timeFill = $('#timeFill'), timeText = $('#timeText'), boostFill = $('#boostFill');
+  const popRoot = $('#popups');
+  const heartSVG = '<svg class="heart" viewBox="0 0 24 24" width="25" height="25"><path fill="#ff6b5e" d="M12 21.5S3.2 16 1.4 11.2C-.2 6.9 3 3 7.2 3c2 0 3.6 1.2 4.8 2.9C13.2 4.2 14.8 3 16.8 3 21 3 24.2 6.9 22.6 11.2 20.8 16 12 21.5 12 21.5z"/></svg>';
+  const ICON_SOUND = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3zm13.6 2a4.6 4.6 0 0 0-2.6-4.1v8.2a4.6 4.6 0 0 0 2.6-4.1z"/></svg>';
+  const ICON_MUTE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const livesEl = $('#lives');
+  for (let i = 0; i < 3; i++) {
+    const w = document.createElement('div');
+    w.innerHTML = heartSVG;
+    livesEl.appendChild(w.firstChild);
+  }
+  const btnSound = $('#btnSound');
+  function updateSoundIcon() { btnSound.innerHTML = muted ? ICON_MUTE : ICON_SOUND; }
+  updateSoundIcon();
+  btnSound.addEventListener('click', () => { muted = !muted; updateSoundIcon(); if (!muted) sfx.click(); });
+
+  // ===== HUD 刷新 =====
+  function updateLives() {
+    livesEl.querySelectorAll('.heart').forEach((h, i) => h.classList.toggle('off', i >= lives));
+  }
+  function updateHUD() {
+    scoreEl.textContent = score;
+    timeFill.style.width = (timeLeft / GAME_TIME * 100).toFixed(1) + '%';
+    timeText.textContent = Math.ceil(timeLeft);
+    timeBar.classList.toggle('low', timeLeft <= 10);
+    boostFill.style.width = (boostMeter * 100).toFixed(1) + '%';
+    if (combo > 1) {
+      comboEl.textContent = 'x' + combo;
+      comboEl.classList.remove('hidden');
+      comboEl.classList.remove('pop');
+      void comboEl.offsetWidth;
+      comboEl.classList.add('pop');
+    } else comboEl.classList.add('hidden');
+  }
+  function popup(wx, wz, text) {
+    const v = new THREE.Vector3(wx, 2.0, wz).project(camera);
+    if (v.z > 1) return;
+    const p = document.createElement('div');
+    p.className = 'popup';
+    p.textContent = text;
+    p.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+    p.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    popRoot.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+
+  // ===== 流程控制 =====
+  function startGame() {
+    score = 0; combo = 1; comboT = 0; lives = 3; timeLeft = GAME_TIME; coinsGot = 0;
+    bx = 0; bz = 8; heading = Math.PI; speed = 0; boostMeter = 1; boostOn = false;
+    invincT = 0; shakeT = 0; lastTickSec = 99;
+    fw.x = Math.sin(heading); fw.z = Math.cos(heading);
+    for (const c of coins) { c.userData.active = false; spawnCoin(c); }
+    wakePts.length = 0; wakeGeom.setDrawRange(0, 0);
+    state = 'playing';
+    $('#screenStart').classList.add('hidden');
+    $('#screenOver').classList.add('hidden');
+    $('#screenPause').classList.add('hidden');
+    $('#hud').classList.remove('hidden');
+    $('#touchWrap').classList.toggle('hidden', !isTouch);
+    updateHUD(); updateLives();
+    sfx.start();
+  }
+  function gameOver() {
+    state = 'over';
+    const isRecord = score > best;
+    if (isRecord) { best = score; try { localStorage.setItem('ocbTreasure', best); } catch (e) { /* 忽略 */ } }
+    $('#finalScore').textContent = score;
+    $('#finalCoins').textContent = '收集金币 ' + coinsGot + ' 枚';
+    $('#recordLine').classList.toggle('hidden', !isRecord);
+    $('#bestScore').textContent = best;
+    $('#screenOver').classList.remove('hidden');
+    $('#touchWrap').classList.add('hidden');
+    sfx.over();
+  }
+  function togglePause() {
+    if (state === 'playing') { state = 'paused'; $('#screenPause').classList.remove('hidden'); }
+    else if (state === 'paused') { state = 'playing'; $('#screenPause').classList.add('hidden'); }
+  }
+  function toMenu() {
+    state = 'menu';
+    $('#screenPause').classList.add('hidden');
+    $('#screenOver').classList.add('hidden');
+    $('#hud').classList.add('hidden');
+    $('#touchWrap').classList.add('hidden');
+    $('#screenStart').classList.remove('hidden');
+    camPos.set(0, 8.5, 30);
+  }
+  $('#btnStart').addEventListener('click', () => { ac(); startGame(); });
+  $('#btnResume').addEventListener('click', togglePause);
+  $('#btnRestart').addEventListener('click', startGame);
+  $('#btnMenu').addEventListener('click', toMenu);
+  $('#btnOverRestart').addEventListener('click', () => { ac(); startGame(); });
+  $('#btnOverMenu').addEventListener('click', toMenu);
+  $('#btnPause').addEventListener('click', togglePause);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') togglePause();
+  });
+  $('#menuBest').textContent = best;
+
+  // ===== 物理与逻辑 =====
+  function updatePlay(dt) {
+    // 输入合成（键盘优先，触屏兜底）
+    const kbThrust = ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 0.55 : 0);
+    const kbSteer = ((keys['a'] || keys['arrowleft']) ? -1 : 0) + ((keys['d'] || keys['arrowright']) ? 1 : 0);
+    const thrustIn = kbThrust !== 0 ? kbThrust : touchThrust;
+    const steer = kbSteer !== 0 ? kbSteer : touchSteer;
+
+    // 加速能量
+    const boosting = boostOn && boostMeter > 0.02 && thrustIn > 0;
+    if (boosting) boostMeter = Math.max(0, boostMeter - 0.5 * dt);
+    else boostMeter = Math.min(1, boostMeter + 0.14 * dt);
+
+    // 速度模型：推力 + 阻尼 + 二次阻力
+    const maxV = boosting ? 34 : 24;
+    speed += thrustIn * (boosting ? 20 : 14) * dt;
+    if (speed > maxV) speed = maxV;
+    if (speed < -9) speed = -9;
+    speed *= Math.exp(-0.28 * dt);
+    speed -= speed * Math.abs(speed) * 0.0042 * dt;
+    if (Math.abs(speed) < 0.05 && thrustIn === 0) speed = 0;
+
+    // 转向（速度越快越灵活）
+    const dirSign = speed >= 0 ? 1 : -1;
+    heading += steer * 2.0 * Math.min(1, Math.abs(speed) / 10) * dirSign * dt;
+    fw.x = Math.sin(heading); fw.z = Math.cos(heading);
+
+    // 位置 + 圆形边界
+    bx += fw.x * speed * dt;
+    bz += fw.z * speed * dt;
+    const bd = Math.hypot(bx, bz);
+    if (bd > 225) { bx *= 225 / bd; bz *= 225 / bd; speed *= 0.6; }
+
+    // 船体姿态
+    boat.position.set(bx, 0.6 + Math.sin(animT * 1.4) * 0.07, bz);
+    boat.rotation.y = heading;
+    const rollT = -steer * Math.min(1, Math.abs(speed) / 16) * 0.3;
+    const pitchT = -thrustIn * 0.1 + speed * 0.006;
+    const kr = Math.min(1, dt * 5);
+    boat.rotation.z += (rollT - boat.rotation.z) * kr;
+    boat.rotation.x += (pitchT - boat.rotation.x) * kr;
+
+    // 撞击无敌闪烁
+    if (invincT > 0) {
+      invincT -= dt;
+      boat.visible = Math.floor(animT * 14) % 2 === 0;
+    } else boat.visible = true;
+    if (shakeT > 0) shakeT -= dt;
+
+    // 礁石碰撞
+    for (const rk of rocks) {
+      const dx = bx - rk.position.x, dz = bz - rk.position.z;
+      const rr = rk.userData.radius;
+      if (dx * dx + dz * dz < rr * rr) {
+        if (invincT <= 0) {
+          lives--; invincT = 1.9; shakeT = 0.5;
+          const d = Math.hypot(dx, dz) || 1;
+          bx += dx / d * 2.5; bz += dz / d * 2.5;
+          speed = -Math.max(4, Math.abs(speed) * 0.7);
+          sfx.hit();
+          updateLives();
+          if (lives <= 0) { gameOver(); return; }
+        }
+      }
+    }
+
+    // 金币收集
+    for (const c of coins) {
+      if (!c.userData.active) continue;
+      const dx = bx - c.position.x, dz = bz - c.position.z;
+      if (dx * dx + dz * dz < 3.6 * 3.6) {
+        c.userData.active = false;
+        coinsGot++;
+        const gain = 100 * combo;
+        score += gain;
+        popup(c.position.x, c.position.z, '+' + gain);
+        burst(c.position.x, c.position.y, c.position.z, 12);
+        combo = Math.min(9, combo + 1);
+        comboT = 4;
+        sfx.coin(combo - 1);
+        updateHUD();
+        spawnCoin(c);
+      }
+    }
+    if (comboT > 0) {
+      comboT -= dt;
+      if (comboT <= 0) { combo = 1; updateHUD(); }
+    }
+
+    // 倒计时与提示音
+    const sec = Math.ceil(timeLeft);
+    if (sec !== lastTickSec) {
+      lastTickSec = sec;
+      if (sec <= 5 && sec > 0) sfx.tick();
+    }
+
+    // 尾迹
+    wakeTimer -= dt;
+    if (wakeTimer <= 0 && Math.abs(speed) > 3) {
+      wakePts.push({ x: bx - fw.x * 1.6, y: 0.35, z: bz - fw.z * 1.6, life: 1 });
+      if (wakePts.length > WAKE_N) wakePts.shift();
+      wakeTimer = Math.max(0.04, 0.5 / Math.max(1, Math.abs(speed)));
+    }
+    updateHUD();
+  }
+
+  // ===== 环境动画 =====
+  function updateAmbient(dt) {
+    for (let i = 0; i < coins.length; i++) {
+      const c = coins[i];
+      if (!c.userData.active) continue;
+      const ph = c.userData.phase;
+      c.position.y = 1.15 + Math.sin(animT * 2.1 + ph) * 0.16;
+      c.rotation.x = Math.sin(animT * 1.4 + ph) * 0.28;
+      c.rotation.z = Math.cos(animT * 1.2 + ph) * 0.28;
+      c.rotation.y += dt * 1.2;
+    }
+    for (let i = 0; i < rocks.length; i++) {
+      rocks[i].position.y = Math.sin(animT * 0.8 + i * 1.7) * 0.05;
+    }
+    if (boatFlag) boatFlag.rotation.z = Math.sin(animT * 3) * 0.12;
+    if (boatSail) boatSail.rotation.z = Math.sin(animT * 1.6) * 0.06;
+    if (!reduceMotion) {
+      for (const cl of clouds) {
+        cl.position.x += dt * 0.5;
+        if (cl.position.x > 1250) cl.position.x = -1250;
+      }
+    }
+  }
+
+  // ===== 尾迹更新 =====
+  function updateWake(dt) {
+    if (wakePts.length === 0) return;
+    for (const p of wakePts) p.life -= dt * 0.55;
+    while (wakePts.length && wakePts[0].life <= 0) wakePts.shift();
+    for (let i = 0; i < wakePts.length; i++) {
+      const p = wakePts[i];
+      wakePos[i * 3] = p.x; wakePos[i * 3 + 1] = p.y; wakePos[i * 3 + 2] = p.z;
+      const k = Math.max(0, p.life);
+      wakeCol[i * 3] = k; wakeCol[i * 3 + 1] = k; wakeCol[i * 3 + 2] = k;
+    }
+    wakeGeom.attributes.position.needsUpdate = true;
+    wakeGeom.attributes.color.needsUpdate = true;
+    wakeGeom.setDrawRange(0, wakePts.length);
+  }
+
+  // ===== 粒子更新 =====
+  function updateParticles(dt) {
+    for (const p of particles) {
+      if (!p.sp.visible) continue;
+      p.life -= dt;
+      if (p.life <= 0) { p.sp.visible = false; continue; }
+      p.vy -= 13 * dt;
+      p.sp.position.x += p.vx * dt;
+      p.sp.position.y += p.vy * dt;
+      p.sp.position.z += p.vz * dt;
+      const k = p.life / p.max;
+      p.sp.material.opacity = 0.95 * k;
+      const s = 1.2 + 0.8 * (1 - k);
+      p.sp.scale.set(s, s, 1);
+    }
+  }
+
+  // ===== 相机 =====
+  function updateCamera(dt) {
+    if (state === 'menu') {
+      const a = animT * 0.14;
+      camPos.set(Math.cos(a) * 30, 8.5, Math.sin(a) * 30);
+      camera.position.copy(camPos);
+      camera.lookAt(0, 1.6, 0);
+      return;
+    }
+    if (state === 'over') return; // 停在最后一刻
+    const k = 1 - Math.exp(-4.5 * dt);
+    const tx = bx - fw.x * 13.5, ty = 1.2 + 6.4, tz = bz - fw.z * 13.5;
+    camPos.x += (tx - camPos.x) * k;
+    camPos.y += (ty - camPos.y) * k;
+    camPos.z += (tz - camPos.z) * k;
+    if (shakeT > 0 && !reduceMotion) {
+      const m = shakeT * 3;
+      camera.position.set(
+        camPos.x + (Math.random() - 0.5) * m,
+        camPos.y + (Math.random() - 0.5) * m,
+        camPos.z + (Math.random() - 0.5) * m);
+    } else camera.position.copy(camPos);
+    lookAt.x += (bx + fw.x * 7 - lookAt.x) * k;
+    lookAt.y += (1.5 - lookAt.y) * k;
+    lookAt.z += (bz + fw.z * 7 - lookAt.z) * k;
+    camera.lookAt(lookAt);
+  }
+
+  // ===== 主循环 =====
+  let lastT = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    let dt = (now - lastT) / 1000;
+    lastT = now;
+    if (dt > 0.05) dt = 0.05;
+    animT += dt;
+    if (water) water.material.uniforms['time'].value += dt * 0.5;
+    if (state === 'playing') {
+      timeLeft -= dt;
+      if (timeLeft <= 0) { timeLeft = 0; gameOver(); }
+      else updatePlay(dt);
+    }
+    updateAmbient(dt);
+    updateWake(dt);
+    updateParticles(dt);
+    updateCamera(dt);
+    renderer.render(scene, camera);
+  }
+
+  // ===== 启动 =====
+  for (const c of coins) spawnCoin(c);
+  boat.position.set(bx, 0.6, bz);
+  boat.rotation.y = heading;
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  requestAnimationFrame(loop);
+  renderer.render(scene, camera); // 首帧同步渲染
+  window.__GAME_READY__ = true;
+}
+</script>
+</body>
+</html>
