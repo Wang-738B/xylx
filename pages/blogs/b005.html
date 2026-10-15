@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于VGA | xyLX·Wang</title>
+    <meta name="description" content="VGA、SVGA：从实模式文本到现代Windows兼容模式 VGA是PC发展史上极其重要的显示标准，很多人只知道它是蓝色接头的老式视频线，但…">
+    <meta name="author" content="xyLX·Wang">
+    <meta name="theme-color" content="#f7f1e3">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="关于VGA">
+    <meta property="og:description" content="VGA、SVGA：从实模式文本到现代Windows兼容模式 VGA是PC发展史上极其重要的显示标准，很多人只知道它是蓝色接头的老式视频线，但…">
+    <meta property="og:image" content="../../image/index-background.jpg">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="../../image/index-icon.png">
+    <link rel="preload" href="../../image/index-background.jpg" as="image">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "关于VGA",
+        "__DATE_JSON__": "2026-09-04",
+        "author": { "@type": "Person", "name": "xyLX·Wang" },
+        "publisher": { "@type": "Person", "name": "xyLX·Wang" }
+    }
+    </script>
+    <script>
+        /* 主题预加载：避免明暗主题闪烁 */
+        (function () {
+            try {
+                var saved = localStorage.getItem("siteTheme");
+                var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) { }
+        })();
+    </script>
+    <style>
+        /* ============ 主题变量（与博客列表页完全一致的金色体系） ============ */
+        :root {
+            --ink: #4a3d28;
+            --ink-soft: #7a6a4d;
+            --gold: #946c22;
+            --gold-deep: #7a5a1e;
+            --gold-soft: #b39862;
+            --gold-pale: rgba(179, 152, 98, 0.30);
+            --card-bg: rgba(255, 255, 255, 0.55);
+            --card-bg-hover: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(180, 150, 90, 0.35);
+            --glass: rgba(255, 255, 255, 0.40);
+            --chip-bg: rgba(255, 255, 255, 0.35);
+            --shadow: 0 10px 34px rgba(90, 70, 30, 0.14);
+            --ring: rgba(148, 108, 34, 0.22);
+            --bg-dim: rgba(40, 30, 10, 0.05);
+        }
+        html[data-theme="dark"] {
+            --ink: #e9dec8;
+            --ink-soft: #b8ab8e;
+            --gold: #e2b64f;
+            --gold-deep: #f2cd75;
+            --gold-soft: #c8a25e;
+            --gold-pale: rgba(200, 162, 94, 0.32);
+            --card-bg: rgba(30, 26, 20, 0.55);
+            --card-bg-hover: rgba(45, 38, 29, 0.80);
+            --card-border: rgba(200, 162, 94, 0.26);
+            --glass: rgba(30, 26, 20, 0.50);
+            --chip-bg: rgba(60, 52, 40, 0.55);
+            --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+            --ring: rgba(226, 182, 79, 0.25);
+            --bg-dim: rgba(0, 0, 0, 0.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--ink);
+        }
+        :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+        /* ============ 背景层：图片 + 暗色压暗 + 粒子画布 ============ */
+        .bg-image {
+            position: fixed; inset: 0; z-index: 0;
+            background: url("../../image/index-background.jpg") center / cover no-repeat;
+            transition: filter .4s ease;
+        }
+        html[data-theme="dark"] .bg-image { filter: brightness(.60) saturate(.92); }
+        .bg-dim {
+            position: fixed; inset: 0; z-index: 0;
+            background: var(--bg-dim);
+            transition: background .4s ease;
+        }
+        #goldSandCanvas {
+            position: fixed; inset: 0; z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ============ 文章主体容器 ============ */
+        .container {
+            position: relative; z-index: 2;
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 72px 20px 120px;
+            min-height: 100vh;
+        }
+
+        /* ============ 文章卡片（毛玻璃） ============ */
+        .post-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 44px 48px 40px;
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+        }
+
+        /* ============ 文章头部：标题 + 日期集中在这里 ============ */
+        .post-head { text-align: center; margin-bottom: 28px; }
+        .post-head h1 {
+            font-size: 2.05rem;
+            color: var(--gold);
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        .head-line {
+            width: 64px; height: 2px;
+            margin: 18px auto 0;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+        }
+        .post-meta { margin-top: 14px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .meta-chip {
+            font-size: .82rem;
+            color: var(--ink-soft);
+            background: var(--chip-bg);
+            border: 1px solid var(--card-border);
+            padding: 5px 14px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .meta-chip svg { width: 13px; height: 13px; }
+
+        /* ============ 正文排版（标题/段落/列表/表格/引用/代码/图片统一） ============ */
+        .post-body { line-height: 1.95; color: var(--ink); font-size: 1.03rem; }
+        .post-body h1 { font-size: 1.5rem; color: var(--gold); margin: 1.6em 0 .7em; }
+        .post-body h2 {
+            font-size: 1.32rem; color: var(--gold);
+            margin: 1.8em 0 .7em;
+            padding-left: 12px;
+            border-left: 3px solid var(--gold-soft);
+        }
+        .post-body h3 { font-size: 1.14rem; color: var(--gold-deep); margin: 1.5em 0 .6em; }
+        .post-body p { margin: 1em 0; }
+        .post-body strong { color: var(--gold-deep); font-weight: 600; }
+        .post-body em { color: var(--ink-soft); }
+        .post-body a { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
+        .post-body ul, .post-body ol { margin: 1em 0; padding-left: 1.6em; }
+        .post-body li { margin: .45em 0; }
+        .post-body code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .9em;
+            background: var(--chip-bg);
+            padding: 2px 7px;
+            border-radius: 6px;
+            color: var(--gold-deep);
+        }
+        .post-body img {
+            max-width: 100%;
+            border-radius: 14px;
+            margin: 20px auto;
+            display: block;
+            box-shadow: var(--shadow);
+        }
+        .post-body blockquote {
+            margin: 1.4em 0;
+            padding: 14px 20px;
+            border-left: 3px solid var(--gold-soft);
+            background: var(--chip-bg);
+            border-radius: 0 12px 12px 0;
+            color: var(--ink-soft);
+        }
+        .post-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.4em 0;
+            font-size: .94rem;
+            table-layout: fixed;
+        }
+        .post-body th, .post-body td {
+            border: 1px solid var(--card-border);
+            padding: 9px 12px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+        }
+        .post-body thead th { background: var(--gold-pale); color: var(--gold-deep); font-weight: 600; }
+        .post-body tbody tr:nth-child(even) { background: var(--bg-dim); }
+        .post-body small { color: var(--ink-soft); font-size: .85em; }
+
+        /* ============ 文章底部注脚 ============ */
+        .post-note {
+            margin-top: 34px;
+            padding-top: 18px;
+            border-top: 1px dashed var(--card-border);
+            font-size: .9rem;
+            color: var(--ink-soft);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .post-note a { color: var(--gold); text-decoration: none; }
+        .post-note a:hover { text-decoration: underline; }
+
+        /* ============ 固定按钮：左下返回，右上主题 ============ */
+        .left-bottom-bar {
+            position: fixed; left: 24px; bottom: 24px; z-index: 6;
+            display: flex; gap: 10px;
+        }
+        .theme-btn { position: fixed; right: 24px; top: 24px; z-index: 6; }
+        .ui-btn {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--gold-pale);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(90, 70, 30, .08);
+            color: var(--gold-deep);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+            transition: .2s;
+        }
+        .ui-btn:hover {
+            background: var(--card-bg-hover);
+            border-color: var(--gold-soft);
+            transform: translateY(-2px);
+        }
+        .ui-btn svg { width: 19px; height: 19px; }
+
+        /* ============ 入场动画 ============ */
+        .anim-in {
+            opacity: 0;
+            animation: fadeUp .6s cubic-bezier(.22, 1, .36, 1) forwards;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 640px) {
+            .container { padding: 52px 14px 100px; }
+            .post-card { padding: 26px 18px 28px; border-radius: 16px; }
+            .post-head h1 { font-size: 1.5rem; }
+            .post-body { font-size: 1rem; line-height: 1.85; }
+            .left-bottom-bar { left: 16px; bottom: 16px; }
+            .theme-btn { right: 16px; top: 16px; }
+        }
+
+        /* 尊重减少动态效果偏好 */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .anim-in { opacity: 1; animation: none; }
+            .ui-btn, .post-card { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <div class="bg-dim"></div>
+    <canvas id="goldSandCanvas"></canvas>
+
+    <!-- 固定按钮：返回博客列表 / 明暗主题 -->
+    <div class="left-bottom-bar">
+        <a class="ui-btn" href="../blog-index.html" title="返回博客" aria-label="返回博客">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        </a>
+    </div>
+    <button class="ui-btn theme-btn" id="themeBtn" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg id="themeSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="themeMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <main class="container">
+        <!-- ===== 文章内容（新文章只需修改这里：标题、日期、正文） ===== -->
+        <article class="post-card anim-in">
+            <header class="post-head">
+                <h1>关于VGA</h1>
+                <div class="head-line" aria-hidden="true"></div>
+                <div class="post-meta">
+                    <span class="meta-chip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                        2026.9.4
+                    </span>
+                </div>
+            </header>
+            <div class="post-body">
+<h1>VGA、SVGA：从实模式文本到现代Windows兼容模式</h1>
+        <p>VGA是PC发展史上极其重要的显示标准，很多人只知道它是蓝色接头的老式视频线，但它背后包含显存布局、文本模式、图形模式、后续SVGA扩展，甚至现代Windows的回退兼容逻辑。很多底层现象，都可以追溯到VGA时代。</p><h2>原始VGA：IBM的经典显示硬件</h2>
+        <p>VGA（Video Graphics Array，视频图形阵列）诞生于IBM PC时代，显存总容量仅有256KB，内存地址被固定映射到CPU地址空间。</p>
+        <ul>
+            <li><strong>文本模式 80×25</strong>：显存基址 <code>0xB8000</code>。每两个字节代表一个字符：一字节是ASCII字符，一字节存放前景、背景颜色。不需要绘制像素，CPU直接往这块内存写数据，屏幕就立刻显示文字，速度极快。这就是DOS下黑底白字控制台的底层实现。</li>
+            <li><strong>图形模式 640×480 16色</strong>：显存基址 <code>0xA0000</code>。受限于硬件设计，使用<strong>位平面</strong>机制，256KB显存被切分成4个独立页面。画一个像素需要操作多组寄存器，代码繁琐，CPU开销很大。</li>
+        </ul>
+        <p>早期VGA硬件本身没有3D加速，没有视频解码能力，所有画面生成全部依靠CPU进行计算与显存写入。</p><h2>SVGA（Super VGA，超级VGA）的突破</h2>
+        <p>VGA能力很快不够用，第三方厂商推出各类扩展，统称SVGA。后来VESA组织制定VBE（VESA BIOS Extensions）统一标准，结束各家互不兼容的混乱局面。</p>
+        <ul>
+            <li>支持更高分辨率，从800×600一路到1024×768甚至更高，支持真彩色。</li>
+            <li>引入<strong>线性帧缓冲 Linear Frame Buffer</strong>：不再使用麻烦的位平面。整块显存映射为一段连续CPU内存地址，写像素就像写普通数组，大幅简化绘图程序。</li>
+            <li>硬件依然只负责把内存里的像素输出到显示器，<strong>没有任何硬件加速单元</strong>，绘制、填充全部靠CPU。</li>
+        </ul><h2>现代Windows里的“VGA兼容模式”是什么？</h2>
+        <p>现在主板早已没有老式VGA硬件，但“VGA兼容”这个概念保留了下来，就是你遇到的 <strong>Microsoft 基本显示适配器</strong>。</p>
+        <p>当显卡驱动丢失、损坏，Windows不会直接黑屏，会回退到这套兼容兼容路径：</p>
+        <ol>
+            <li>操作系统不去调用GPU的3D引擎、硬解码ASIC单元；</li>
+            <li>复用SVGA/VBE的逻辑，只做最基础的帧缓冲区读写；</li>
+            <li>所有窗口绘制、界面合成全部交给CPU软渲染。</li>
+        </ol>
+        <p>这并不是真的跑在古老的0xB8000地址，只是沿用这套“CPU全权绘图”的软件逻辑。所以会出现拖动窗口残影、刷新率低、播放视频严重卡顿。GPU硬件明明还在，但是系统完全不去使用它的加速能力。</p><h3>关键区分：VGA接口 ≠ VGA显示模式</h3>
+        <p>很多人容易混淆两件东西：</p>
+        <ul>
+            <li>VGA接口：蓝色15针模拟视频接头，是物理硬件接口，可以输出高分辨率画面；</li>
+            <li>VGA显示模式：是古老的显卡工作规范（文本/位平面图形）。就算你用HDMI、DP显示器，驱动挂掉，Windows依然会进入VGA兼容软渲染模式。</li>
+        </ul><h2>和机房电脑故障的关联</h2>
+        <p>回到学校电脑的案例：</p>
+        <p>机器本身拥有完整核显，支持3D渲染、HEVC硬解。但是还原卡把驱动抹掉，系统落到Microsoft基本显示适配器（SVGA/VGA兼容软渲染路径）。</p>
+        <p>此时：</p>
+        <ul>
+            <li>GPU硬件闲置；</li>
+            <li>窗口合成、视频解码全部压给CPU；</li>
+            <li>就会出现拖窗口残影、视频软解满载、音画不同步。</li>
+        </ul>
+        <p>一旦正确安装驱动，系统就抛弃VGA兼容路径，切换到现代GPU驱动通道，硬件加速、硬解码全部恢复。</p><h2>简单总结对照表</h2>
+        <table border="1" cellpadding="6" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>类型</th>
+                    <th>显存基址</th>
+                    <th>核心特点</th>
+                    <th>加速能力</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>VGA文本模式</td>
+                    <td>0xB8000</td>
+                    <td>直接输出字符，不渲染像素</td>
+                    <td>无加速</td>
+                </tr>
+                <tr>
+                    <td>VGA图形模式</td>
+                    <td>0xA0000</td>
+                    <td>4个位平面，编程复杂</td>
+                    <td>无加速</td>
+                </tr>
+                <tr>
+                    <td>SVGA / VBE</td>
+                    <td>高位PCI内存地址</td>
+                    <td>线性帧缓冲，高分辨率真彩色</td>
+                    <td>仅输出像素，无3D/视频硬解</td>
+                </tr>
+                <tr>
+                    <td>Microsoft基本显示适配器</td>
+                    <td>现代PCIe地址</td>
+                    <td>Windows兼容回退，CPU软渲染</td>
+                    <td>完全不调用GPU硬件能力</td>
+                </tr>
+            </tbody>
+        </table><h2>结尾小思考</h2>
+        <p>VGA与SVGA代表PC图形的“CPU手绘时代”。现代GPU驱动的意义，就是跳出这套古老框架，把绘图、视频解码交给芯片内部专用硬件。硬件再好，如果没有驱动，系统就会跌回三十年前的软渲染老路，再好的机器也会卡顿。</p>
+
+        <br><p>说明，文章内容是deepseek写的，有问题欢迎指出</p>
+        
+            </div>
+            <div class="post-note">
+                <span>— xyLX·Wang</span>
+                <a href="../blog-index.html">返回博客列表</a>
+            </div>
+        </article>
+    </main>
+
+    <script>
+        /* ==================== 金沙粒子（与全站一致） ==================== */
+        (function () {
+            const canvas = document.getElementById("goldSandCanvas");
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext("2d");
+            const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            let W = 0, H = 0, particles = [];
+            let mouse = { x: null, y: null };
+            let rafId = null;
+            let resizeTimer = null;
+            const colors = ["#fff1b8", "#ffdd70", "#f7c84e", "#e8b435", "#d4a028", "#c28c1c"];
+            function resize() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth; H = window.innerHeight;
+                canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+                canvas.style.width = W + "px"; canvas.style.height = H + "px";
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                createParticles();
+            }
+            function createParticles() {
+                const count = reduced ? 0 : Math.max(50, Math.min(240, Math.round(W * H / 9000)));
+                particles = new Array(count);
+                for (let i = 0; i < count; i++) {
+                    particles[i] = {
+                        x: Math.random() * W, y: Math.random() * H,
+                        size: Math.random() * 3.2 + 0.4,
+                        sx: (Math.random() - 0.5) * 0.35, sy: (Math.random() - 0.5) * 0.25,
+                        color: colors[(Math.random() * colors.length) | 0],
+                        alpha: Math.random() * 0.7 + 0.15, tw: Math.random() * 0.018 + 0.004
+                    };
+                }
+            }
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                const R = 110, R2 = R * R;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.alpha += p.tw;
+                    if (p.alpha > 0.85 || p.alpha < 0.12) p.tw = -p.tw;
+                    let dx = 0, dy = 0;
+                    if (mouse.x !== null) {
+                        const mx = p.x - mouse.x, my = p.y - mouse.y;
+                        const d2 = mx * mx + my * my;
+                        if (d2 < R2 && d2 > 0.01) {
+                            const d = Math.sqrt(d2);
+                            const force = (R - d) / R * 0.7;
+                            dx = mx / d * force; dy = my / d * force;
+                        }
+                    }
+                    p.x += p.sx + dx; p.y += p.sy + dy;
+                    if (p.x > W) p.x = 0; else if (p.x < 0) p.x = W;
+                    if (p.y > H) p.y = 0; else if (p.y < 0) p.y = H;
+                    ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                rafId = requestAnimationFrame(animate);
+            }
+            window.addEventListener("pointermove", e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+            window.addEventListener("pointerleave", () => { mouse.x = null; mouse.y = null; });
+            window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 200); });
+            resize();
+            if (!reduced) animate();
+        })();
+
+        /* ==================== 明暗主题切换 ==================== */
+        const themeBtn = document.getElementById("themeBtn");
+        const themeSun = document.getElementById("themeSun");
+        const themeMoon = document.getElementById("themeMoon");
+        function updateThemeIcon() {
+            const dark = document.documentElement.getAttribute("data-theme") === "dark";
+            themeSun.style.display = dark ? "block" : "none";
+            themeMoon.style.display = dark ? "none" : "block";
+        }
+        themeBtn.addEventListener("click", () => {
+            const cur = document.documentElement.getAttribute("data-theme");
+            const next = cur === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            try { localStorage.setItem("siteTheme", next); } catch (e) { }
+            updateThemeIcon();
+        });
+        /* ==================== 快捷键：T 切换主题 / B 返回博客列表 ==================== */
+        document.addEventListener("keydown", e => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const tag = (e.target && e.target.tagName) || "";
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+            const k = e.key.toLowerCase();
+            if (k === "t") themeBtn.click();
+            else if (k === "b") location.href = "../blog-index.html";
+        });
+        console.log("提示：按 T 切换明暗主题，按 B 返回博客列表。");
+        updateThemeIcon();
+    </script>
+</body>
+</html>
