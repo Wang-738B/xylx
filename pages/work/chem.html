@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f5f0e1'/%3E%3Ctext x='32' y='45' font-size='34' text-anchor='middle' fill='%23d98e4a' font-family='serif'%3E%E5%85%83%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js';s.onerror=function(){window.THREE_CDN_FAIL=1};document.head.appendChild(s);"></script>
+<title>元素大陆 · 化学探索</title>
+<style>
+  :root{
+    --bg:#f5f0e1;
+    --card:#fdf9ef;
+    --line:#e3d9c0;
+    --ink:#4a4238;
+    --ink-soft:#8a7f6d;
+    --accent:#d98e4a;
+    --accent-deep:#b96f35;
+    --ok:#7fa06a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;color:var(--ink);user-select:none;-webkit-user-select:none;}
+  #game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+
+  /* ===== HUD 顶部 ===== */
+  #hud{position:fixed;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(253,249,239,.92);border:1px solid var(--line);border-radius:999px;padding:6px 10px;box-shadow:0 2px 10px rgba(90,70,40,.10);z-index:30;max-width:calc(100vw - 20px);}
+  #hud .name{font-size:13px;font-weight:700;letter-spacing:.5px;white-space:nowrap;color:var(--accent-deep);}
+  #hud .sep{width:1px;height:18px;background:var(--line);}
+  #hud .stat{font-size:12px;white-space:nowrap;}
+  #hud .stat b{color:var(--accent-deep);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;transition:transform .12s,background .12s;white-space:nowrap;}
+  .btn:active{transform:scale(.94);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.ghost{background:transparent;}
+  #hud .btn{padding:5px 11px;}
+  @media (max-width:520px){
+    #hud .name{display:none;}
+    #hud .stat{font-size:11px;}
+  }
+
+  /* ===== Toast ===== */
+  #toasts{position:fixed;top:64px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:40;pointer-events:none;width:100%;}
+  .toast{background:rgba(253,249,239,.95);border:1px solid var(--line);border-radius:12px;padding:7px 14px;font-size:12.5px;box-shadow:0 4px 14px rgba(90,70,40,.14);animation:toastIn .22s ease;max-width:86vw;text-align:center;}
+  .toast.out{animation:toastOut .3s ease forwards;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(-6px);}}
+
+  /* ===== 弹窗 ===== */
+  .modal-mask{position:fixed;inset:0;background:rgba(74,66,56,.35);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px;}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:18px;width:100%;max-width:560px;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(60,45,25,.22);}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;}
+  .modal-head h2{font-size:16px;font-weight:700;}
+  .modal-head .close{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .modal-body{padding:4px 18px 16px;overflow-y:auto;flex:1;}
+
+  /* 开始界面：开场情景 */
+  #start .hero{text-align:center;padding:6px 4px 12px;}
+  #start .hero h1{font-size:26px;font-weight:800;color:var(--accent-deep);letter-spacing:2px;}
+  #start .hero p{font-size:12.5px;color:var(--ink-soft);margin-top:5px;letter-spacing:.5px;}
+  #start .modal{position:relative;}
+  #start .skip{position:absolute;top:12px;right:14px;font-size:12px;color:var(--ink-soft);border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 13px;cursor:pointer;}
+  #start .story{display:flex;flex-direction:column;gap:11px;padding:2px 2px 14px;}
+  #start .story-line{opacity:0;transform:translateY(9px);transition:opacity .55s ease,transform .55s ease;font-size:14px;line-height:1.8;color:var(--ink);}
+  #start .story-line.show{opacity:1;transform:none;}
+  #start .story-line .who{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent-deep);background:#fff1e0;border:1px solid #e8c860;border-radius:6px;padding:1px 7px;margin-right:8px;vertical-align:2px;white-space:nowrap;}
+  #start .story-line .drop{color:var(--ink-soft);font-size:13.5px;letter-spacing:2px;}
+  #start .story-line.poem{font-size:13px;color:var(--ink-soft);padding-left:4px;border-left:2px solid var(--line);line-height:1.8;}
+  #start .story-line.poem .who{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
+  #start .go{display:flex;gap:10px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s;pointer-events:none;}
+  #start .go.show{opacity:1;transform:none;pointer-events:auto;}
+  #start .go .btn{flex:1;padding:11px 0;font-size:14px;border-radius:12px;}
+
+  /* 玩法手册（通用规则块） */
+  .rules{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.95;margin-bottom:12px;}
+  .rules b{color:var(--accent-deep);}
+
+  /* 存档管理 */
+  .btn.danger{background:#f4e3dd;border-color:#d9a58f;color:#a65a3a;}
+  .save-info{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;line-height:2;margin-bottom:12px;}
+  .save-info .srow{display:flex;align-items:center;}
+  .save-info .srow span{color:var(--ink-soft);width:64px;flex-shrink:0;}
+  .save-info .srow b{color:var(--ink);font-weight:700;}
+  .save-actions{display:flex;gap:8px;margin-bottom:10px;}
+  .save-actions .btn{flex:1;padding:9px 0;font-size:12.5px;border-radius:10px;}
+  #save-code{width:100%;height:90px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;padding:8px 10px;resize:vertical;line-height:1.5;}
+  #btn-save-apply{width:100%;margin-top:8px;padding:10px 0;font-size:13px;border-radius:10px;}
+
+  /* 背包 */
+  .inv-sec{font-size:12px;font-weight:700;color:var(--ink-soft);margin:12px 0 6px;display:flex;align-items:center;gap:8px;}
+  .inv-sec:first-child{margin-top:0;}
+  .inv-sec::after{content:'';flex:1;height:1px;background:var(--line);}
+  .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;}
+  .inv-cell{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;}
+  .inv-cell .sym{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;margin-bottom:5px;}
+  .inv-cell .sym.raw{border-radius:10px;}
+  .inv-cell .nm{font-size:11px;color:var(--ink-soft);}
+  .inv-cell .ct{font-size:13px;font-weight:700;margin-top:2px;}
+  .inv-cell.empty{opacity:.45;}
+  .inv-cell.empty .ct{color:var(--ink-soft);font-weight:400;}
+
+  /* 加工台 */
+  .craft-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .ctab{flex:1;padding:9px 0;border:1px solid var(--line);background:var(--bg);border-radius:10px;font-size:13px;cursor:pointer;color:var(--ink);transition:background .12s;}
+  .ctab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+  .craft-list{display:flex;flex-direction:column;gap:8px;}
+  .craft-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px 12px;}
+  .craft-row .prod{display:flex;flex-direction:column;align-items:center;min-width:56px;}
+  .craft-row .prod .psym{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:24px;border-radius:8px;color:#fff;font-weight:800;font-size:12px;padding:0 6px;}
+  .craft-row .prod .pnm{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .craft-row .ingr{flex:1;font-size:12px;line-height:1.7;color:var(--ink-soft);}
+  .craft-row .ingr b{color:var(--ink);}
+  .craft-row .ingr .lack{color:#c0563f;}
+  .craft-row .ingr .cond{display:inline-block;background:#fff1e0;border:1px solid #e8c860;color:#a9711f;font-size:10px;padding:0 6px;border-radius:6px;margin-left:4px;white-space:nowrap;}
+  .craft-row .ingr .hint{display:block;font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .craft-row .cbtn{padding:8px 14px;font-size:12.5px;border-radius:10px;}
+  .craft-row.done{opacity:.6;}
+  .craft-row.done .cbtn{background:var(--ok);border-color:var(--ok);color:#fff;cursor:default;}
+
+  /* 图鉴 */
+  .besti{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+  .b-cell{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 8px;text-align:center;position:relative;}
+  .b-cell.locked{opacity:.4;filter:grayscale(.7);}
+  .b-cell .sym{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:26px;border-radius:8px;color:#fff;font-weight:800;font-size:12px;padding:0 6px;margin-bottom:5px;}
+  .b-cell .nm{font-size:11px;color:var(--ink-soft);line-height:1.4;}
+  .b-cell .verse{font-size:10.5px;color:#a09582;font-style:italic;line-height:1.5;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;}
+  .b-cell .new{position:absolute;top:-5px;right:-4px;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:.55;}}
+  .b-progress{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12.5px;}
+  .b-bar{flex:1;height:8px;background:var(--bg);border:1px solid var(--line);border-radius:99px;margin:0 10px;overflow:hidden;}
+  .b-bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s;}
+
+  /* 摇杆 */
+  #stick-wrap{position:fixed;left:22px;bottom:24px;width:112px;height:112px;border-radius:50%;background:rgba(253,249,239,.5);border:1.5px solid var(--line);z-index:30;display:none;touch-action:none;}
+  #stick{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(217,142,74,.75);transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(90,70,40,.2);}
+
+  /* 采集按钮 */
+  #btn-pick{position:fixed;right:16px;bottom:88px;z-index:30;border-radius:14px;padding:11px 16px;font-size:13.5px;box-shadow:0 4px 14px rgba(90,70,40,.2);}
+
+  /* 滴酸按钮 */
+  #btn-acid{position:fixed;right:16px;bottom:26px;z-index:30;border-radius:14px;padding:11px 16px;font-size:13.5px;box-shadow:0 4px 14px rgba(90,70,40,.2);}
+  #btn-acid.dis{opacity:.5;}
+
+  /* 目标指示条 */
+  #hud-goal{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:29;background:rgba(253,249,239,.92);border:1px solid var(--line);border-radius:999px;padding:5px 14px;font-size:12px;color:var(--ink-soft);box-shadow:0 2px 8px rgba(90,70,40,.12);white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
+  #hud-goal b{color:var(--accent-deep);}
+
+  /* 元素之心解码 */
+  .lock-progress{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12.5px;}
+  .lock-bar{flex:1;height:8px;background:var(--bg);border:1px solid var(--line);border-radius:99px;overflow:hidden;}
+  .lock-bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s;}
+  .lock-quiz{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .lock-poem{font-size:14px;line-height:1.8;color:var(--ink);min-height:4em;}
+  .lock-poem .who{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent-deep);background:#fff1e0;border:1px solid #e8c860;border-radius:6px;padding:1px 7px;margin-right:8px;vertical-align:2px;white-space:nowrap;}
+  .lock-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+  .lock-opt{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 6px;font-size:13px;cursor:pointer;transition:transform .12s,background .12s;color:var(--ink);}
+  .lock-opt:active{transform:scale(.96);}
+  .lock-opt .ls{display:block;font-weight:800;color:var(--accent-deep);font-size:15px;margin-bottom:2px;}
+  .lock-opt .ln{font-size:11px;color:var(--ink-soft);}
+  .lock-note{font-size:11px;color:var(--ink-soft);margin-top:10px;line-height:1.6;}
+
+  /* 通关 */
+  #win-modal .story{display:flex;flex-direction:column;gap:11px;padding:4px 2px 14px;}
+  #win-modal .go{display:flex;gap:10px;}
+  #win-modal .go .btn{flex:1;padding:11px 0;font-size:14px;border-radius:12px;background:var(--accent);border-color:var(--accent);color:#fff;}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- ===== HUD ===== -->
+<div id="hud">
+  <span class="name">元素大陆</span>
+  <span class="sep"></span>
+  <span class="stat">图鉴 <b id="hud-besti">0</b>/<span id="hud-besti-total">25</span></span>
+  <span class="sep"></span>
+  <button class="btn" id="btn-inv">背包</button>
+  <button class="btn primary" id="btn-craft">加工</button>
+  <button class="btn ghost" id="btn-best">图鉴</button>
+  <button class="btn ghost" id="btn-save">档</button>
+  <button class="btn ghost" id="btn-help">?</button>
+</div>
+<div id="hud-goal"></div>
+
+<div id="toasts"></div>
+
+<!-- ===== 采集按钮（右下） ===== -->
+<button class="btn primary" id="btn-pick">采集</button>
+
+<!-- ===== 滴酸技能按钮（右下） ===== -->
+<button class="btn primary" id="btn-acid">滴酸 <span id="acid-cnt">0</span></button>
+
+<!-- ===== 虚拟摇杆 ===== -->
+<div id="stick-wrap"><div id="stick"></div></div>
+
+<!-- ===== 开始界面：开场情景 ===== -->
+<div class="modal-mask" id="start">
+  <div class="modal" id="start-card">
+    <button class="skip" id="btn-skip">跳过 ▸▸</button>
+    <div class="modal-body">
+      <div class="hero">
+        <h1>元素大陆</h1>
+        <p>一场坠落 · 一段化学之旅</p>
+      </div>
+      <div class="story" id="story">
+        <p class="story-line"><span class="drop">……信号恢复。</span></p>
+        <p class="story-line"><span class="who">管理员 · AI</span>你好，坠入者。欢迎来到我的沙盒——元素大陆。</p>
+        <p class="story-line"><span class="who">管理员 · AI</span>这里的每一样东西，都藏着一句元素写的诗。</p>
+        <p class="story-line poem"><span class="who">诗 · 1 · 氢</span>万物开口之前，它是宇宙说的第一个词。</p>
+        <p class="story-line poem"><span class="who">诗 · 6 · 碳</span>同一个名字，一半戴上王冠，一半走进炉膛。</p>
+        <p class="story-line poem"><span class="who">诗 · 8 · 氧</span>顶着「酸之母」的错名，喂养了每一口呼吸。</p>
+        <p class="story-line poem"><span class="who">诗 · 26 · 铁</span>火焰在它面前合上书，血液替它继续朗读。</p>
+        <p class="story-line"><span class="who">管理员 · AI</span>想回地球？很简单——<b>集齐它们，造出你的船</b>。</p>
+        <p class="story-line"><span class="who">管理员 · AI</span>至于怎么入手？森林、沙滩、海水各有各的规矩——去问右上角那个「?」吧。</p>
+      </div>
+      <div class="go" id="go-wrap">
+        <button class="btn primary" id="btn-start">开始探索</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 玩法手册（? 帮助弹窗） ===== -->
+<div class="modal-mask" id="help-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>玩法手册</h2><button class="close" data-close="help-modal">×</button></div>
+    <div class="modal-body">
+      <div class="rules">
+        <b>怎么玩：</b>森林把树递到你手里；把树削成<b>铲</b>，沙滩、盐与矿石才会交出自己。<b>桶</b>装水，<b>玻璃瓶</b>装空气与酸——砂子经火淬炼，方能吹成玻璃。原料在<b>熔炉</b>（加热）、<b>电解槽</b>（电解）里提炼成元素，再在<b>反应台</b>按化学原理合成化合物。<br>
+        <b>采集：</b>每一片地都有它的脾气：森林认手，沙滩认铲，水域认桶，空气认玻璃。点右下角<b>采集</b>（电脑 <b>E</b> 键）手动收下它们。<br>
+        <b>耐久：</b>桶会旧，铁会锈。<b>硫酸记仇</b>，不原谅铁——玻璃才能陪它走完最后一程。<br>
+        <b>新元素：</b>铜与锌贴在一起，会替闪电开路——山地深处的<b>闪锌矿</b>，等着一场原电池的电解。<br>
+        <b>工具：</b>加工台「制造」可做：<b>木铲</b>、<b>木桶/铁桶</b>、<b>玻璃瓶</b>、<b>小车</b>（陆地加速）、<b>小船</b>（驶入深海）。<br>
+        <b>滴酸：</b>把硫酸滴在脚下，它替你把地皮啃穿，矿物急着跳出来（右下按钮 / <b>Q</b> 键）。<br>
+        <b>操作：</b>电脑用 <b>WASD / 方向键</b> 移动；手机使用左下角<b>摇杆</b>。按住画面<b>拖动</b>可旋转视角，移动方向会跟随视角。<br>
+        <b>目标：</b>炼出全部 13 种元素，合成 12 种化合物，填满图鉴——图鉴里的诗，会告诉你它们藏在哪里。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 存档管理 ===== -->
+<div class="modal-mask" id="save-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>存档管理</h2><button class="close" data-close="save-modal">×</button></div>
+    <div class="modal-body">
+      <div class="save-info" id="save-info"></div>
+      <div class="save-actions">
+        <button class="btn" id="btn-save-export">导出存档</button>
+        <button class="btn" id="btn-save-import">导入存档</button>
+        <button class="btn danger" id="btn-save-reset">重置存档</button>
+      </div>
+      <textarea id="save-code" spellcheck="false" placeholder="导出存档时这里会显示存档数据；导入时把存档 JSON 粘贴到这里，再点「应用导入」"></textarea>
+      <button class="btn primary" id="btn-save-apply" style="display:none;">应用导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 元素之心 · 解码仪式 ===== -->
+<div class="modal-mask" id="lock-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>元素之心 · 解码</h2><button class="close" data-close="lock-modal">×</button></div>
+    <div class="modal-body">
+      <div class="lock-progress" id="lock-progress"></div>
+      <div class="lock-quiz">
+        <p class="lock-poem" id="lock-poem"></p>
+        <div class="lock-opts" id="lock-opts"></div>
+      </div>
+      <p class="lock-note">读懂诗句，投入对应的元素。答错会招来酸雾，损失一种元素。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 通关 ===== -->
+<div class="modal-mask" id="win-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-body">
+      <div class="hero">
+        <h1>回 家</h1>
+        <p>元素大陆 · 终章</p>
+      </div>
+      <div class="story" id="win-story">
+        <p class="story-line"><span class="who">管理员 · AI</span>点火成功。火箭，升空——</p>
+        <p class="story-line"><span class="who">管理员 · AI</span>你集齐了这里的一切，把整个大陆装进了燃料箱。这份完成度，够开发者先生吹一年。</p>
+        <p class="story-line"><span class="drop">……信号里传来一行没署名的留言。</span></p>
+        <p class="story-line drop poem-line"><span class="who">开发者</span>真的有人玩到这里？船票有效，欢迎回家。谢谢你，替我陪了它这么久。</p>
+        <p class="story-line"><span class="who">管理员 · AI</span>一路顺风，坠入者。我会想你的——也可能不会。</p>
+      </div>
+      <div class="go" id="win-go" style="display:none;">
+        <button class="btn primary" id="btn-win-continue">继续探索</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 背包弹窗 ===== -->
+<div class="modal-mask" id="inv-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>背包</h2><button class="close" data-close="inv-modal">×</button></div>
+    <div class="modal-body" id="inv-body"></div>
+  </div>
+</div>
+
+<!-- ===== 加工台弹窗 ===== -->
+<div class="modal-mask" id="craft-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>加工台</h2><button class="close" data-close="craft-modal">×</button></div>
+    <div class="modal-body">
+      <div class="craft-tabs">
+        <button class="ctab active" data-tab="furnace">熔炉 · 加热</button>
+        <button class="ctab" data-tab="electro">电解槽 · 电解</button>
+        <button class="ctab" data-tab="react">反应台 · 化合</button>
+        <button class="ctab" data-tab="make">制造 · 工具</button>
+      </div>
+      <div class="craft-list" id="craft-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 图鉴弹窗 ===== -->
+<div class="modal-mask" id="besti-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h2>物质图鉴</h2><button class="close" data-close="besti-modal">×</button></div>
+    <div class="modal-body">
+      <div class="b-progress"><span id="b-count">0/24</span><div class="b-bar"><i id="b-bar" style="width:0%"></i></div><span id="b-pct">0%</span></div>
+      <div class="besti" id="besti-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ruleset_id: element-land-v2 */
+
+/* =====================================================
+   配置（单一配置源）
+===================================================== */
+const CONFIG = {
+  ruleset: 'element-land-v2',
+  tile: 36,
+  chunkTiles: 16,
+  viewRadius: 3,
+  playerSpeed: 240,
+  waterSlow: 0.55,
+  pickRange: 40,
+  pickCooldown: 900,
+  oreRespawn: 50,
+  seed: 20260922,
+};
+const TILE = CONFIG.tile, CHUNK = CONFIG.chunkTiles, CHUNK_PX = TILE * CHUNK;
+
+/* =====================================================
+   物质数据
+===================================================== */
+/* 元素（加工后获得） */
+const ELEMENTS = {
+  H:  {name:'氢', color:'#8fb8d8', poem:'万物开口之前，它是宇宙说的第一个词。'},
+  O:  {name:'氧', color:'#d8a0a0', poem:'顶着「酸之母」的错名，喂养了每一口呼吸。'},
+  C:  {name:'碳', color:'#6b645c', poem:'同一个名字，一半戴上王冠，一半走进炉膛。'},
+  N:  {name:'氮', color:'#b9a8d8', poem:'垄断了整片天空，却把钥匙交给闪电和泥土。'},
+  Na: {name:'钠', color:'#d8cf8a', poem:'与海水相依为命，却一碰水就暴跳如雷。'},
+  Cl: {name:'氯', color:'#a8d8a8', poem:'绿衣的刽子手，转身做了千家万户的清道夫。'},
+  Fe: {name:'铁', color:'#c08a5a', poem:'火焰在它面前合上书，血液替它继续朗读。'},
+  Cu: {name:'铜', color:'#b87a52', poem:'从塞浦路斯远嫁，一手递出青铜时代，一手点亮长夜。'},
+  Ca: {name:'钙', color:'#e8dfc4', poem:'几亿年前的海，被它一块一块砌成了山。'},
+  S:  {name:'硫', color:'#e2c55a', poem:'地狱借它的气味说话，头发丝里却藏着它的温柔。'},
+  Si: {name:'硅', color:'#a8b2c0', poem:'从沙里起身，长成了人类新的脑回。'},
+  Al: {name:'铝', color:'#c8c8d2', poem:'曾让王座侧目的金属，如今在每家厨房排队。'},
+  Zn: {name:'锌', color:'#9aa8c0', poem:'替钢铁挡下所有锈迹，自己在风里先白了头。'},
+};
+
+/* 化合物（图鉴目标） */
+const COMPOUNDS = [
+  {sym:'H2O',  name:'水'},
+  {sym:'CO2',  name:'二氧化碳'},
+  {sym:'CO',   name:'一氧化碳'},
+  {sym:'NaCl', name:'食盐'},
+  {sym:'Fe2O3',name:'铁锈'},
+  {sym:'SiO2', name:'二氧化硅'},
+  {sym:'CaCO3',name:'碳酸钙'},
+  {sym:'NH3',  name:'氨'},
+  {sym:'H2SO4',name:'硫酸'},
+  {sym:'NaOH', name:'氢氧化钠'},
+  {sym:'CuO',  name:'氧化铜'},
+  {sym:'Al2O3',name:'氧化铝'},
+];
+
+/* 原料（世界采集）：disc 为采集时点亮的图鉴物质 */
+const RAW = {
+  wood:   {name:'木材', color:'#a5713f', disc:null,  tag:'森林'},
+  water:  {name:'水',   color:'#6fa8c8', disc:'H2O', tag:'水域'},
+  air:    {name:'氮气', color:'#b9a8d8', disc:null,  tag:'空气'},
+  sand:   {name:'砂砾', color:'#a8b2c0', disc:'SiO2', tag:'沙滩'},
+  shell:  {name:'贝壳', color:'#e8dfc4', disc:'CaCO3', tag:'沙滩'},
+  hematite:{name:'赤铁矿', color:'#a05a4a', disc:'Fe2O3', tag:'山地'},
+  chalcopyrite:{name:'黄铜矿', color:'#c8a04a', disc:null,  tag:'山地'},
+  bauxite:{name:'铝土矿', color:'#c08060', disc:'Al2O3', tag:'山地'},
+  halite: {name:'岩盐', color:'#e8e4da', disc:'NaCl', tag:'盐碱地'},
+  sphalerite:{name:'闪锌矿', color:'#8a7a9a', disc:null, tag:'山地'},
+  sulfur: {name:'硫磺', color:'#e2c55a', disc:'S',   tag:'火山口'},
+  acid:   {name:'硫酸', color:'#e8c860', disc:'H2SO4', tag:'火山口'},
+};
+
+/* 中间物（加工产生） */
+const MID = {
+  CaO: {name:'生石灰', color:'#e8e0cc'},
+  glass:{name:'玻璃', color:'#a8d8d8'},
+};
+
+/* 熔炉（加热） */
+const FURNACE = [
+  {in:{wood:1},        out:{C:2},       name:'木材干馏',   hint:'隔绝空气加热，木材变碳'},
+  {in:{shell:1},       out:{CaO:1, CO2:1}, name:'贝壳煅烧', hint:'碳酸钙受热分解'},
+  {in:{hematite:1, C:1}, out:{Fe:2, CO2:1}, name:'高炉炼铁', hint:'氧化铁被碳还原'},
+  {in:{chalcopyrite:1},out:{Cu:2, S:1}, name:'焙烧炼铜',   hint:'黄铜矿焙烧，副产硫磺'},
+  {in:{sand:1, C:1},   out:{Si:1, CO:1}, name:'硅石还原',   hint:'二氧化硅与碳共热'},
+  {in:{sand:1, wood:1},out:{glass:1},   name:'烧制玻璃',   hint:'砂子加木柴烧成玻璃'},
+  {in:{sand:1, C:1},   out:{glass:1},   name:'木炭烧玻璃', hint:'以木炭作燃料烧制'},
+];
+
+/* 电解槽 */
+const ELECTRO = [
+  {in:{water:1},       out:{H:2, O:1},  name:'电解水',     hint:'水分解为氢气和氧气'},
+  {in:{bauxite:1},     out:{Al:2},      name:'电解铝',     hint:'熔融氧化铝电解'},
+  {in:{halite:1},      out:{Na:1, Cl:1}, name:'电解熔盐',  hint:'熔融氯化钠电解'},
+  {in:{CaO:1},         out:{Ca:1, O:1}, name:'电解生石灰', hint:'氧化钙电解得钙'},
+  {in:{sphalerite:1, Cu:1}, out:{Zn:2, S:1}, name:'原电池电解', hint:'铜锌组成原电池，电解闪锌矿提锌'},
+];
+
+/* 反应台（化合） */
+const REACT = [
+  {in:{H:2, O:1},      out:{H2O:1},     name:'氢氧燃烧',   hint:''},
+  {in:{C:1, O:2},      out:{CO2:1},     name:'碳充分燃烧', hint:''},
+  {in:{C:1, O:1},      out:{CO:1},      name:'碳不完全燃烧', hint:''},
+  {in:{Na:1, Cl:1},    out:{NaCl:1},    name:'钠氯化合',   hint:''},
+  {in:{Fe:2, O:3},     out:{Fe2O3:1},   name:'铁缓慢氧化', hint:''},
+  {in:{Cu:1, O:1},     out:{CuO:1},     name:'铜加热氧化', hint:''},
+  {in:{air:1, H:6},    out:{NH3:2},     name:'合成氨',     hint:'氮气极稳定，需高温高压催化剂', cond:true},
+  {in:{Na:1, water:1}, out:{NaOH:1, H:1}, name:'钠与水',   hint:'剧烈放热反应', cond:true},
+];
+
+const BESTI_TOTAL = Object.keys(ELEMENTS).length + COMPOUNDS.length;
+
+/* 工具（制造获得）：cart/boat/spade/bottle 为布尔拥有，bucketW/bucketI 为剩余耐久值 */
+const TOOLS = {
+  cart:  {name:'小车',   color:'#a5713f', desc:'铁轮木车，陆地移速提升 50%'},
+  boat:  {name:'小船',   color:'#6fa8c8', desc:'可驶入深水海域'},
+  spade: {name:'木铲',   color:'#a5713f', desc:'挖取沙滩、盐与各种矿石'},
+  bucketW:{name:'木桶',  color:'#c8a04a', desc:'装水，耐久 5 次'},
+  bucketI:{name:'铁桶',  color:'#8a8f98', desc:'装水耐久 15 次；装硫酸会损坏'},
+  bottle:{name:'玻璃瓶', color:'#a8d8d8', desc:'收集氮气与硫酸'},
+  rocket:{name:'火箭',   color:'#8a8f98', desc:'集齐元素铸就的回家之船'},
+};
+const MAKES = [
+  {tool:'cart',   in:{Fe:4, wood:4, C:2},  name:'打造小车',   hint:'铁架 + 木板 + 碳轴'},
+  {tool:'boat',   in:{wood:6},             name:'打造小船',   hint:'木板拼装，下水航行'},
+  {tool:'spade',  in:{wood:3},             name:'削制木铲',   hint:'三块木板削成铲子'},
+  {tool:'bucketW',in:{wood:4},             name:'打造木桶',   hint:'木板箍成木桶'},
+  {tool:'bucketI',in:{Fe:2, wood:2},       name:'打造铁桶',   hint:'铁皮铆接，升级木桶'},
+  {tool:'bottle', in:{glass:2},            name:'吹制玻璃瓶', hint:'玻璃加热吹制成瓶'},
+  {tool:'rocket', in:{Fe:8, Al:4, glass:2, C:2, H:6, O:3, NH3:2, Cu:1, Zn:1}, name:'组装火箭', hint:'炼铁为骨，电解铝为皮，玻璃为窗，碳为喷管，氢氧为燃料，氨为推进，铜锌为火种'},
+];
+
+/* 元素之心 · 守卫（按弱点消耗对应物品攻击） */
+const GUARDS = [
+  {key:'iron',   name:'铁傀儡', weak:'acid',   hp:6, poem:'浑身铁锈，正等着什么把它啃穿。'},
+  {key:'fire',   name:'硫火怪', weak:'water',  hp:6, poem:'浑身是火，最怕被一桶水浇醒。'},
+  {key:'shadow', name:'氮气幻影', weak:'NH3',  hp:6, poem:'抓不住的影子，除非先把它固定住。'},
+  {key:'salt',   name:'盐巨像', weak:'Na',     hp:6, poem:'盐做的巨人，怕水，更怕活泼的金属。'},
+];
+
+/* 元素之心 · 13 道元素锁（谜面即元素诗） */
+const LOCKS = Object.keys(ELEMENTS).map(el => ({
+  el, name: ELEMENTS[el].name, poem: ELEMENTS[el].poem
+}));
+
+const COMPOUND_MAP = {};
+for(const c of COMPOUNDS) COMPOUND_MAP[c.sym] = {name:c.name, color:'#5f9ea0'};
+
+/* 物质统一信息查询 */
+function matInfo(key){
+  if(ELEMENTS[key])     return {name:ELEMENTS[key].name, color:ELEMENTS[key].color, type:'元素', sym:key};
+  if(RAW[key])          return {name:RAW[key].name, color:RAW[key].color, type:'原料', sym:rawSym(key)};
+  if(MID[key])          return {name:MID[key].name, color:MID[key].color, type:'中间物', sym:key};
+  if(COMPOUND_MAP[key]) return {name:COMPOUND_MAP[key].name, color:COMPOUND_MAP[key].color, type:'化合物', sym:key};
+  return null;
+}
+function rawSym(key){
+  const map = {wood:'木', water:'水', air:'氮', sand:'砂', shell:'贝', hematite:'铁',
+    chalcopyrite:'铜', bauxite:'铝', halite:'盐', sphalerite:'锌', sulfur:'硫', acid:'酸'};
+  return map[key] || key;
+}
+
+/* =====================================================
+   噪声：Value Noise + FBM（多频叠加）
+===================================================== */
+function hash2(x, y, seed){
+  let h = seed | 0;
+  h = Math.imul(h ^ (x | 0), 374761393);
+  h = Math.imul(h ^ (y | 0), 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return h / 4294967295;
+}
+function smooth(t){ return t * t * (3 - 2 * t); }
+function valueNoise(x, y, seed){
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const xf = x - xi, yf = y - yi;
+  const a = hash2(xi, yi, seed), b = hash2(xi+1, yi, seed);
+  const c = hash2(xi, yi+1, seed), d = hash2(xi+1, yi+1, seed);
+  const u = smooth(xf), v = smooth(yf);
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+function fbm(x, y, seed, oct){
+  let v = 0, amp = 0.5, freq = 1, tot = 0;
+  for(let i=0;i<oct;i++){
+    v += valueNoise(x*freq, y*freq, seed+i*101)*amp;
+    tot += amp; amp *= 0.5; freq *= 2;
+  }
+  return v / tot;
+}
+
+/* =====================================================
+   地形定义
+===================================================== */
+const T_GRASS=0, T_FOREST=1, T_DESERT=2, T_MOUNTAIN=3, T_SNOW=4,
+      T_SAND=5, T_SHALLOW=6, T_DEEP=7, T_RIVER=8;
+
+const TERRAIN = {
+  [T_GRASS]:   {c:'#cdd9a5', name:'草原', ores:[['wood',0.006],['shell',0.002]]},
+  [T_FOREST]:  {c:'#a9c18d', name:'森林', ores:[['wood',0.020]]},
+  [T_DESERT]:  {c:'#e8d5a5', name:'沙漠', ores:[['halite',0.012]]},
+  [T_MOUNTAIN]:{c:'#b7a690', name:'山地', ores:[['hematite',0.010],['chalcopyrite',0.007],['bauxite',0.006],['sphalerite',0.006]]},
+  [T_SNOW]:    {c:'#efecdf', name:'雪原', ores:[['halite',0.006]]},
+  [T_SAND]:    {c:'#e6d2a0', name:'沙滩', ores:[['sand',0.012],['shell',0.009]]},
+  [T_SHALLOW]: {c:'#bcd3df', name:'浅水', ores:[['water',0.016]]},
+  [T_DEEP]:    {c:'#9db8c9', name:'深水', ores:[]},
+  [T_RIVER]:   {c:'#a5c8dd', name:'河流', ores:[['water',0.020]]},
+};
+
+function tileTypeAt(wx, wy, seed){
+  const OFF = (seed % 900) + 100;
+  const e1 = fbm((wx+OFF)*0.009, (wy+OFF)*0.009, seed, 4);
+  const e2 = fbm((wx+OFF)*0.028, (wy+OFF)*0.028, seed+101, 3);
+  const raw = e1*0.68 + e2*0.32;
+  const e = Math.min(1, Math.max(0, (raw-0.38)*1.7 + 0.26));
+  const m = fbm((wx+OFF+37.3)*0.014, (wy+OFF-19.7)*0.014, seed+7, 3);
+  const r = fbm((wx+OFF+71.9)*0.05, (wy+OFF+53.1)*0.05, seed+13, 2);
+
+  if(e < 0.31) return T_DEEP;
+  if(e < 0.39) return T_SHALLOW;
+  if(e < 0.45) return T_SAND;
+  if(e < 0.62 && Math.abs(r-0.5) < 0.016) return T_RIVER;
+  if(e >= 0.78) return T_SNOW;
+  if(e >= 0.60) return T_MOUNTAIN;
+  if(m < 0.40) return T_DESERT;
+  if(m < 0.66) return T_GRASS;
+  return T_FOREST;
+}
+
+/* =====================================================
+   世界：区块按需生成 + 矿点
+===================================================== */
+const SEED = CONFIG.seed;
+const chunks = new Map();
+
+function chunkKey(cx, cy){ return cx + ',' + cy; }
+
+/* 每个物质独立的哈希种子 */
+function oreSeed(k){
+  const c0 = k.charCodeAt(0), c1 = k.charCodeAt(1) || 0;
+  return c0 * 131 + c1 * 17 + 7;
+}
+
+function getChunk(cx, cy){
+  const k = chunkKey(cx, cy);
+  if(chunks.has(k)) return chunks.get(k);
+  const ch = {cx, cy, tiles:[], ores:[], volcano:[]};
+  for(let ty=0; ty<CHUNK; ty++){
+    for(let tx=0; tx<CHUNK; tx++){
+      const wx = cx*CHUNK + tx, wy = cy*CHUNK + ty;
+      const t = tileTypeAt(wx, wy, SEED);
+      ch.tiles.push(t);
+      if(t !== T_DEEP){
+        let placed = 0;
+        for(const [mat, prob] of TERRAIN[t].ores){
+          if(hash2(wx*7+3, wy*7+11, SEED + oreSeed(mat)) < prob){
+            ch.ores.push({mat, tx, ty, t: Date.now(), spawnable: true});
+            if(++placed >= 2) break;
+          }
+        }
+        // 氮气：任意陆地与浅水都可采集（空气）
+        if(placed < 2 && hash2(wx*3+1, wy*3+9, SEED + oreSeed('air')) < 0.007){
+          ch.ores.push({mat:'air', tx, ty, t: Date.now(), spawnable: true});
+          placed++;
+        }
+        // 火山口：山地特殊地形（噪声 + 概率双重限制），产硫磺与硫酸
+        if(t === T_MOUNTAIN && fbm(wx*0.008+200, wy*0.008+200, SEED+29, 2) > 0.74
+           && hash2(wx*5+7, wy*5+13, SEED+89) < 0.07){
+          ch.volcano.push({tx, ty});
+          ch.ores.push({mat:'sulfur', tx, ty, t: Date.now(), spawnable: true});
+          ch.ores.push({mat:'acid', tx, ty, t: Date.now(), spawnable: true});
+        }
+      }
+    }
+  }
+  chunks.set(k, ch);
+  return ch;
+}
+
+function getTileType(wx, wy){
+  const cx = Math.floor(wx/CHUNK), cy = Math.floor(wy/CHUNK);
+  const ch = getChunk(cx, cy);
+  const tx = wx - cx*CHUNK, ty = wy - cy*CHUNK;
+  return ch.tiles[ty*CHUNK + tx];
+}
+function speedFactor(wx, wy){
+  const t = getTileType(wx, wy);
+  const inWater = (t === T_SHALLOW || t === T_RIVER || t === T_DEEP);
+  if(inWater) return tools.boat ? 1.6 : CONFIG.waterSlow;
+  return tools.cart ? 1.5 : 1;
+}
+function canStand(wx, wy){
+  const t = getTileType(wx, wy);
+  return t !== T_DEEP || tools.boat; // 深水需造船才能进入
+}
+
+/* 附近矿点（含重生检查） */
+function nearbyOre(px, py, range){
+  let best = null, bd = range*range;
+  const ccx = Math.floor(px/CHUNK_PX), ccy = Math.floor(py/CHUNK_PX);
+  for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++){
+    const ch = chunks.get(chunkKey(ccx+dx, ccy+dy));
+    if(!ch) continue;
+    for(const o of ch.ores){
+      if(!o.spawnable && Date.now()-o.t > CONFIG.oreRespawn*1000){ o.spawnable = true; }
+      if(!o.spawnable) continue;
+      const ox = (ch.cx*CHUNK + o.tx + 0.5)*TILE;
+      const oy = (ch.cy*CHUNK + o.ty + 0.5)*TILE;
+      const d = (ox-px)*(ox-px) + (oy-py)*(oy-py);
+      if(d < bd){ bd = d; best = {mat:o.mat, x:ox, y:oy, o, ch}; }
+    }
+  }
+  return best;
+}
+
+/* =====================================================
+   玩家与相机
+===================================================== */
+const player = { x: 0, y: 0, vx: 0, vy: 0, face: 0 };
+const cam = { x: 0, y: 0 };
+
+function spawnPlayer(){
+  // 出生在草原，且周边 4 区块内有森林与沙滩（出生景观不单调）
+  for(let i=0;i<300;i++){
+    const wx = 40 + Math.floor(Math.random()*120);
+    const wy = 40 + Math.floor(Math.random()*120);
+    if(getTileType(wx, wy) !== T_GRASS) continue;
+    let hasForest = false, hasSand = false;
+    for(let dy=-2; dy<=2; dy++) for(let dx=-2; dx<=2; dx++){
+      const tx = wx + dx*16, ty = wy + dy*16;
+      if(tx<0 || ty<0) continue;
+      const t = getTileType(tx, ty);
+      if(t === T_FOREST) hasForest = true;
+      if(t === T_SAND || t === T_SHALLOW) hasSand = true;
+    }
+    if(hasForest && hasSand){
+      player.x = (wx+0.5)*TILE; player.y = (wy+0.5)*TILE;
+      towerX = wx + 64; towerY = wy + 64; // 开发者高塔：出生点东南 64 格
+      return;
+    }
+  }
+  player.x = 80*TILE; player.y = 80*TILE;
+  towerX = 144; towerY = 144;
+}
+
+/* =====================================================
+   输入
+===================================================== */
+const keys = {};
+const stick = { active:false, dx:0, dy:0 };
+let camYaw = 0.643, camPitch = 0.52;
+const CAM_DIST = 17.5, CAM_MIN_P = 0.22, CAM_MAX_P = 1.12;
+
+function inputDir(){
+  let lx=0, ly=0;
+  if(keys['ArrowLeft']||keys['KeyA']) lx -= 1;
+  if(keys['ArrowRight']||keys['KeyD']) lx += 1;
+  if(keys['ArrowUp']||keys['KeyW']) ly -= 1;
+  if(keys['ArrowDown']||keys['KeyS']) ly += 1;
+  if(stick.active){ lx += stick.dx; ly += stick.dy; }
+  const len = Math.hypot(lx, ly);
+  if(len > 1){ lx/=len; ly/=len; }
+  if(!len) return [0, 0];
+  // 把屏幕方向转为世界方向（跟随相机朝向）
+  const sY = Math.sin(camYaw), cY = Math.cos(camYaw);
+  const wx = sY*ly + cY*lx;
+  const wy = cY*ly - sY*lx;
+  const wl = Math.hypot(wx, wy) || 1;
+  return [wx/wl, wy/wl];
+}
+
+/* =====================================================
+   背包 / 图鉴 / 存档
+===================================================== */
+const inv = {};
+function initInv(){ for(const el in ELEMENTS) inv[el] = 0; }
+initInv();
+const discovered = new Set();
+const newlyFound = new Set();
+const tools = { cart:false, boat:false, spade:false, bucketW:0, bucketI:0, bottle:false, rocket:false };
+
+/* ===== 元素之心（boss）状态 ===== */
+const guards = GUARDS.map(g => ({ ...g, dead:false }));
+let towerX = 144, towerY = 144;   // 开发者高塔 tile 坐标（出生后按 +64 重设）
+let lockIdx = 0;                  // 元素锁进度（0-13）
+let bossPhase = 0;                // 0=守卫战 1=解码 2=已解锁待点火 3=已通关
+let winShown = false;
+
+const SAVE_KEY = CONFIG.ruleset + ':save';
+const SAVE_VER = 3;
+let suppressSave = false; /* 重置/导入存档时抑制自动保存，防止 beforeunload 覆盖 */
+function saveGame(){
+  if(suppressSave) return;
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      v: SAVE_VER, x: player.x, y: player.y,
+      inv, disc: [...discovered], tools, seed: SEED, t: Date.now(),
+      towerX, towerY, guards: guards.map(g=>({dead:g.dead, hp:g.hp})), lockIdx, bossPhase, winShown
+    }));
+  }catch(e){}
+}
+function loadGame(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if(s && s.v === SAVE_VER && s.seed === SEED && s.disc){
+      player.x = s.x; player.y = s.y;
+      for(const k in s.inv) inv[k] = s.inv[k] || 0;
+      s.disc.forEach(d => discovered.add(d));
+      if(s.tools){
+        tools.cart = !!s.tools.cart; tools.boat = !!s.tools.boat;
+        tools.spade = !!s.tools.spade; tools.bottle = !!s.tools.bottle;
+        tools.rocket = !!s.tools.rocket;
+        tools.bucketW = s.tools.bucketW || 0; tools.bucketI = s.tools.bucketI || 0;
+      }
+      if(s.towerX != null) towerX = s.towerX;
+      if(s.towerY != null) towerY = s.towerY;
+      if(Array.isArray(s.guards)) s.guards.forEach((g,i)=>{ if(guards[i]){ guards[i].dead = !!g.dead; if(g.hp != null) guards[i].hp = g.hp; } });
+      if(s.lockIdx != null) lockIdx = s.lockIdx;
+      if(s.bossPhase != null) bossPhase = s.bossPhase;
+      winShown = !!s.winShown;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+function addDisc(sym){
+  if(!sym || discovered.has(sym)) return;
+  discovered.add(sym); newlyFound.add(sym);
+}
+function addMat(mat, n=1){
+  inv[mat] = (inv[mat]||0) + n;
+  if(RAW[mat] && RAW[mat].disc) addDisc(RAW[mat].disc);
+}
+/* 执行一个配方（熔炉/电解/反应通用），返回是否成功 */
+function applyRecipe(rc){
+  for(const k in rc.in) if((inv[k]||0) < rc.in[k]) return false;
+  for(const k in rc.in) inv[k] -= rc.in[k];
+  const names = [];
+  for(const k in rc.out){
+    inv[k] = (inv[k]||0) + rc.out[k];
+    addDisc(k);
+    names.push(matInfo(k).name);
+  }
+  return names;
+}
+
+/* =====================================================
+   Toast / 音效
+===================================================== */
+const toastsEl = document.getElementById('toasts');
+let muted = false;
+function showToast(html, ms=1900){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.innerHTML = html;
+  toastsEl.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(), 320); }, ms);
+}
+let actx = null;
+function beep(freq=660, dur=0.09, type='sine', vol=0.06){
+  if(muted) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+function sfxPick(){ beep(700, 0.08, 'sine'); setTimeout(()=>beep(900, 0.07, 'sine'), 70); }
+function sfxCraft(){ beep(520, 0.1, 'triangle'); setTimeout(()=>beep(780, 0.14, 'triangle'), 90); }
+
+/* 各原料对应的采集工具：hand=徒手、spade=木铲、bucket=木桶/铁桶、bottle=玻璃瓶 */
+const PICK_METHOD = {
+  wood:'hand',
+  sand:'spade', shell:'spade', halite:'spade',
+  hematite:'spade', chalcopyrite:'spade', bauxite:'spade', sphalerite:'spade', sulfur:'spade',
+  water:'bucket',
+  air:'bottle',
+  acid:'bottle',
+};
+const PICK_VERB = {
+  wood:'拾取', water:'提取', air:'吸收', sand:'挖到', shell:'挖到',
+  hematite:'挖到', chalcopyrite:'挖到', bauxite:'挖到', halite:'挖到', sphalerite:'挖到',
+  sulfur:'采得', acid:'采得'
+};
+
+/* =====================================================
+   手动采集：按原料匹配工具，桶有耐久
+===================================================== */
+let lastPick = 0;
+const particles = [];
+const BUCKET_MAX = { bucketW:5, bucketI:15 };
+
+function doPick(info){
+  if(!info) return {ok:false};
+  const {mat, o} = info;
+  /* 硫酸：玻璃瓶以外都会损坏容器 */
+  if(mat === 'acid' && !tools.bottle){
+    const ruined = tools.bucketI > 0 || tools.bucketW > 0;
+    if(tools.bucketI > 0) tools.bucketI = 0;
+    else if(tools.bucketW > 0) tools.bucketW = 0;
+    o.spawnable = false; o.t = Date.now();
+    sfxCraft(); renderInv(); renderCraft(); saveGame();
+    showToast(ruined ? '容器被硫酸腐蚀，<b>永久损坏</b>了……（需要玻璃瓶）' : '硫酸会腐蚀容器，需要<b>玻璃瓶</b>！', 2600);
+    return {ok:false, reason:'acid_ruin'};
+  }
+  const method = PICK_METHOD[mat] || 'hand';
+  if(method === 'spade' && !tools.spade) return {ok:false, reason:'need_spade'};
+  if(method === 'bottle' && !tools.bottle) return {ok:false, reason:'need_bottle'};
+  let durTip = null;
+  if(method === 'bucket'){
+    let used = null;
+    if(tools.bucketI > 0){ tools.bucketI--; used = 'bucketI'; }
+    else if(tools.bucketW > 0){ tools.bucketW--; used = 'bucketW'; }
+    else return {ok:false, reason:'need_bucket'};
+    durTip = `（${TOOLS[used].name}剩余耐久 ${tools[used]}/${BUCKET_MAX[used]}）`;
+    if(tools[used] <= 0 && !(tools.bucketI > 0 || tools.bucketW > 0)){
+      showToast(`<b>${TOOLS[used].name}</b>耐久耗尽，损坏了！去加工台再造一个吧`, 2200);
+    }
+  }
+  o.spawnable = false; o.t = Date.now();
+  addMat(mat, 1);
+  lastPick = Date.now();
+  const mi = RAW[mat], c = mi.color;
+  const gx = info.x/TILE, gz = info.y/TILE;
+  for(let i=0;i<8;i++){
+    particles.push({x:gx, z:gz, y:1.1, vx:(Math.random()-0.5)*3.6, vz:(Math.random()-0.5)*3.6, vy:1.6+Math.random()*2.4, life:0.6, max:0.6, color:c});
+  }
+  sfxPick();
+  const verb = PICK_VERB[mat] || '获得';
+  const extra = mi.disc && newlyFound.has(mi.disc) ? '　<span style="color:var(--accent-deep)">图鉴新发现！</span>' : '';
+  showToast(`${verb}<b>${mi.name}</b> ×1${extra}${durTip||''}`, 1800);
+  renderInv(); renderCraft();
+  return {ok:true};
+}
+
+/* 手动采集入口（按钮 / E 键） */
+function pickNearby(){
+  const near = nearbyOre(player.x, player.y, CONFIG.pickRange);
+  if(!near){
+    showToast('附近没有可采集的原料', 1500);
+    return;
+  }
+  const r = doPick(near);
+  if(r && r.reason && r.reason !== 'acid_ruin'){
+    const msgs = {
+      need_spade:'需要<b>木铲</b>才能挖矿（加工台 → 制造）',
+      need_bucket:'需要<b>木桶 / 铁桶</b>才能装水（加工台 → 制造）',
+      need_bottle:'需要<b>玻璃瓶</b>才能采集（沙子烧玻璃后吹制）',
+    };
+    showToast(msgs[r.reason] || '无法采集', 2200);
+  }
+  if(r && (r.ok || r.reason)) saveGame();
+}
+
+/* =====================================================
+   滴酸技能：消耗硫酸，快速收集脚下地形的矿物
+===================================================== */
+let lastAcidShown = -1;
+function syncAcidBtn(){
+  const n = inv.acid||0;
+  if(n !== lastAcidShown){
+    lastAcidShown = n;
+    $('acid-cnt').textContent = n;
+    $('btn-acid').classList.toggle('dis', n<=0);
+  }
+}
+function pourAcid(){
+  if((inv.acid||0) < 1){
+    showToast('没有硫酸了，去火山口采一些吧', 1600);
+    return;
+  }
+  inv.acid -= 1;
+  syncAcidBtn();
+  const wx = Math.floor(player.x/TILE), wy = Math.floor(player.y/TILE);
+  const t = getTileType(wx, wy);
+  const cand = TERRAIN[t] ? TERRAIN[t].ores : [];
+  const got = [];
+  if(cand.length === 0){
+    addMat('water', 2); got.push('水×2'); // 深水无矿，蚀出水
+  }else{
+    for(let i=0;i<4;i++){
+      const m = cand[Math.floor(Math.random()*cand.length)][0];
+      addMat(m, 1);
+      got.push(RAW[m].name);
+    }
+  }
+  // 酸蚀粒子（3D 喷溅）
+  const px0 = player.x/TILE, pz0 = player.y/TILE;
+  for(let i=0;i<20;i++){
+    const ang = Math.random()*Math.PI*2, r = 0.5+Math.random()*1.5;
+    particles.push({x:px0+Math.cos(ang)*r, z:pz0+Math.sin(ang)*r, y:0.8,
+      vx:Math.cos(ang)*1.3, vz:Math.sin(ang)*1.3, vy:2.2+Math.random()*2.8, life:0.8, max:0.8, color:'#e8c860'});
+  }
+  sfxCraft();
+  showToast(`酸液蚀出：<b>${got.join('、')}</b>`, 2400);
+  saveGame();
+}
+
+/* 制造工具 */
+function applyMake(mk){
+  for(const k in mk.in) if((inv[k]||0) < mk.in[k]) return false;
+  for(const k in mk.in) inv[k] -= mk.in[k];
+  if(mk.tool === 'bucketW') tools.bucketW = BUCKET_MAX.bucketW;
+  else if(mk.tool === 'bucketI') tools.bucketI = BUCKET_MAX.bucketI;
+  else tools[mk.tool] = true;
+  return true;
+}
+
+/* =====================================================
+   3D 渲染（WebGL / Three.js）
+===================================================== */
+const canvas = document.getElementById('game');
+let DPR = 1, CW = 0, CH = 0;
+
+let renderer, scene, camera;
+let treeMesh, oreMesh, volcMesh, playerGroup, oreMat;
+let towerGroup, coreMesh, guardMeshes = [], rocketMesh;
+let igniteT = 0; /* 点火动画计时 */
+let particleGeo, particlePoints;
+const terrainMeshes = new Map(), waterMeshes = new Map();
+const MAX_TREES = 2000, MAX_ORES = 1000, MAX_VOLC = 60, MAX_PARTICLES = 500;
+let dummy = null, camPos = null;
+
+function hexRGB(hex){
+  const n = parseInt(hex.slice(1), 16);
+  return [(n>>16&255)/255, (n>>8&255)/255, (n&255)/255];
+}
+
+function init3D(){
+  dummy = new THREE.Object3D();
+  camPos = new THREE.Vector3(cam.x/TILE, 3, cam.y/TILE);
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf5f0e1);
+  scene.fog = new THREE.Fog(0xf5f0e1, 70, 280);
+
+  camera = new THREE.PerspectiveCamera(60, CW/CH, 0.1, 500);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  renderer.setPixelRatio(Math.min(DPR, 2));
+  renderer.setSize(CW, CH);
+
+  scene.add(new THREE.AmbientLight(0xfff7ea, 1.2));
+  const sun = new THREE.DirectionalLight(0xfff7ea, 1.15);
+  sun.position.set(60, 90, 40);
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xcfe4ee, 0.35);
+  fill.position.set(-50, 40, -60);
+  scene.add(fill);
+
+  // 树：干+冠合并（顶点色）
+  const trunk = new THREE.CylinderGeometry(0.14, 0.22, 1.1, 5).toNonIndexed();
+  trunk.translate(0, 0.55, 0);
+  const crown = new THREE.ConeGeometry(0.9, 1.8, 7).toNonIndexed();
+  crown.translate(0, 2.0, 0);
+  treeMesh = new THREE.InstancedMesh(mergeGeoms(trunk, crown), new THREE.MeshLambertMaterial({vertexColors:true, side:THREE.DoubleSide}), MAX_TREES);
+  treeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  treeMesh.frustumCulled = false;
+  scene.add(treeMesh);
+
+  // 矿点：八面体
+  oreMat = new THREE.MeshLambertMaterial({side:THREE.DoubleSide});
+  oreMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.62, 0), oreMat, MAX_ORES);
+  oreMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  oreMesh.frustumCulled = false;
+  scene.add(oreMesh);
+
+  // 火山熔岩
+  volcMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1.1, 10, 8), new THREE.MeshBasicMaterial({color:0xe8b04a, side:THREE.DoubleSide}), MAX_VOLC);
+  volcMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  volcMesh.frustumCulled = false;
+  scene.add(volcMesh);
+
+  // 玩家
+  playerGroup = new THREE.Group();
+  const bodyGeo = new THREE.CapsuleGeometry(0.42, 0.75, 4, 8);
+  bodyGeo.translate(0, 0.95, 0);
+  playerGroup.add(new THREE.Mesh(bodyGeo, new THREE.MeshLambertMaterial({color:0xd98e4a, side:THREE.DoubleSide})));
+  const headGeo = new THREE.SphereGeometry(0.38, 10, 8);
+  headGeo.translate(0, 1.95, 0);
+  playerGroup.add(new THREE.Mesh(headGeo, new THREE.MeshLambertMaterial({color:0xfdf9ef, side:THREE.DoubleSide})));
+  const hairGeo = new THREE.SphereGeometry(0.42, 8, 6, 0, 6.28, 0, 1.4);
+  hairGeo.translate(0, 1.95, 0);
+  playerGroup.add(new THREE.Mesh(hairGeo, new THREE.MeshLambertMaterial({color:0xa9713f, side:THREE.DoubleSide})));
+  const shGeo = new THREE.CircleGeometry(0.9, 12);
+  shGeo.rotateX(-Math.PI/2);
+  playerGroup.add(new THREE.Mesh(shGeo, new THREE.MeshBasicMaterial({color:0x5a4630, transparent:true, opacity:0.2, depthWrite:false})));
+  scene.add(playerGroup);
+
+  // 开发者高塔 + 元素之心（固定在世界某处）
+  towerGroup = new THREE.Group();
+  const tMat = new THREE.MeshLambertMaterial({color:0xb98a5a, side:THREE.DoubleSide});
+  const tMat2 = new THREE.MeshLambertMaterial({color:0x8a6a4a, side:THREE.DoubleSide});
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.1, 1.6, 8), tMat2); base.position.y = 0.8;
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.5, 3.2, 8), tMat); p1.position.y = 3.2;
+  const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.1, 2.6, 8), tMat2); p2.position.y = 6.1;
+  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.7, 2.2, 8), tMat); p3.position.y = 8.5;
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.8, 8), tMat2); spire.position.y = 10.5;
+  towerGroup.add(base, p1, p2, p3, spire);
+  coreMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), new THREE.MeshBasicMaterial({color:0x6fb6e0}));
+  coreMesh.position.y = 11.6;
+  towerGroup.add(coreMesh);
+  towerGroup.position.set(towerX + 0.5, 0, towerY + 0.5); // 场景单位 = tile 数
+  scene.add(towerGroup);
+
+  // 守卫模型（塔四角）
+  guardMeshes = [];
+  const gMat = { iron:0x9aa0a8, fire:0xe8783a, shadow:0xb9a8d8, salt:0xe8e4da };
+  const gGeo = { iron:new THREE.BoxGeometry(1.1,1.8,1.1), fire:new THREE.ConeGeometry(0.75,1.9,7),
+    shadow:new THREE.SphereGeometry(0.8,10,8), salt:new THREE.BoxGeometry(1.0,1.9,1.0) };
+  const offs = [[-3.2,0], [3.2,0], [0,-3.2], [0,3.2]];
+  guards.forEach((g, i) => {
+    const mesh = new THREE.Mesh(gGeo[g.key], new THREE.MeshLambertMaterial({color:gMat[g.key], side:THREE.DoubleSide, transparent:g.key==='shadow', opacity:g.key==='shadow'?0.75:1}));
+    mesh.position.set(towerX + offs[i][0], 0, towerY + offs[i][1]);
+    towerGroup.add(mesh);
+    guardMeshes.push(mesh);
+  });
+  // 火箭（塔顶，点火前隐藏）
+  rocketMesh = new THREE.Group();
+  const rMat = new THREE.MeshLambertMaterial({color:0xc8c8d2, side:THREE.DoubleSide});
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 2.4, 8), rMat);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 8), rMat); nose.position.y = 1.65;
+  const win = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshLambertMaterial({color:0xa8d8d8, side:THREE.DoubleSide})); win.position.y = 0.55;
+  rocketMesh.add(body, nose, win);
+  rocketMesh.position.set(0, 0, 0);
+  rocketMesh.visible = false;
+  scene.add(rocketMesh);
+
+  // 粒子
+  particleGeo = new THREE.BufferGeometry();
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_PARTICLES*3), 3));
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX_PARTICLES*3), 3));
+  particleGeo.setDrawRange(0, 0);
+  particlePoints = new THREE.Points(particleGeo, new THREE.PointsMaterial({size:0.85, vertexColors:true, transparent:true, opacity:0.95, depthWrite:false}));
+  scene.add(particlePoints);
+}
+
+function mergeGeoms(a, b){
+  const pa = a.attributes.position, pb = b.attributes.position;
+  const n = pa.count + pb.count;
+  const pos = new Float32Array(n*3);
+  pos.set(pa.array, 0);
+  pos.set(pb.array, pa.count*3);
+  const col = new Float32Array(n*3);
+  for(let i=0;i<pa.count;i++){ col[i*3]=0.55; col[i*3+1]=0.41; col[i*3+2]=0.28; }
+  for(let i=pa.count;i<n;i++){ col[i*3]=0.47; col[i*3+1]=0.63; col[i*3+2]=0.36; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/* 地形高度：生态基准 + 噪声扰动 */
+function terrainHeight(wx, wz, t){
+  if(t===T_SHALLOW || t===T_RIVER || t===T_DEEP) return -0.55;
+  let base = 1.05;
+  if(t===T_SAND) base = 0.6;
+  else if(t===T_MOUNTAIN) base = 3.6;
+  const n = fbm(wx*0.03+300, wz*0.03+300, SEED+5, 2);
+  let h = base + (n-0.5)*2.6;
+  if(t===T_MOUNTAIN) h += (n-0.42)*3.2;
+  return Math.max(h, 0.15);
+}
+
+/* 地形 chunk 网格（高度场 + 顶点色） */
+function buildTerrainMesh(cx, cy){
+  const S = CHUNK;
+  const positions = [], colors = [], indices = [];
+  for(let iz=0; iz<=S; iz++) for(let ix=0; ix<=S; ix++){
+    const wx = cx*S+ix, wz = cy*S+iz;
+    const t = getTileType(wx, wz);
+    const y = terrainHeight(wx, wz, t);
+    const [c1, c2] = tileScreen(t);
+    const col = hash2(wx, wz, 41) < 0.5 ? c1 : c2;
+    positions.push(ix, y, iz);
+    const rgb = hexRGB(col);
+    colors.push(rgb[0], rgb[1], rgb[2]);
+  }
+  for(let iz=0; iz<S; iz++) for(let ix=0; ix<S; ix++){
+    const a = iz*(S+1)+ix, b = a+1, c = a+S+1, d = c+1;
+    indices.push(a, c, b, b, c, d); // 绕序保证法线朝上
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({vertexColors:true, side:THREE.DoubleSide}));
+  mesh.position.set(cx*S, 0, cy*S);
+  return mesh;
+}
+
+/* 水 mesh（只有水格子的水平面，半透明） */
+function buildWaterMesh(cx, cy){
+  const S = CHUNK;
+  const positions = [], indices = [];
+  for(let iz=0; iz<S; iz++) for(let ix=0; ix<S; ix++){
+    const t = getTileType(cx*S+ix, cy*S+iz);
+    if(!(t===T_SHALLOW || t===T_RIVER || t===T_DEEP)) continue;
+    const base = positions.length/3;
+    positions.push(ix, 0.03, iz,  ix+1, 0.03, iz,  ix+1, 0.03, iz+1,  ix, 0.03, iz+1);
+    indices.push(base, base+1, base+2, base, base+2, base+3);
+  }
+  if(!positions.length) return null;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color:0x9db8c9, transparent:true, opacity:0.62, depthWrite:false, side:THREE.DoubleSide}));
+  mesh.position.set(cx*S, 0, cy*S);
+  return mesh;
+}
+
+/* 可见 chunk 管理 */
+function updateChunks(){
+  const ccx = Math.floor(cam.x/TILE/CHUNK), ccy = Math.floor(cam.y/TILE/CHUNK);
+  const R = 2;
+  const keys = new Set();
+  for(let dy=-R; dy<=R; dy++) for(let dx=-R; dx<=R; dx++){
+    const cx = ccx+dx, cy = ccy+dy;
+    const k = cx+'_'+cy;
+    keys.add(k);
+    if(!terrainMeshes.has(k)){
+      const m = buildTerrainMesh(cx, cy);
+      terrainMeshes.set(k, m); scene.add(m);
+      const w = buildWaterMesh(cx, cy);
+      if(w){ waterMeshes.set(k, w); scene.add(w); }
+    }
+  }
+  for(const [k, m] of terrainMeshes){
+    if(!keys.has(k)){ scene.remove(m); m.geometry.dispose(); m.material.dispose(); terrainMeshes.delete(k); }
+  }
+  for(const [k, w] of waterMeshes){
+    if(!keys.has(k)){ scene.remove(w); w.geometry.dispose(); w.material.dispose(); waterMeshes.delete(k); }
+  }
+  return keys;
+}
+
+/* 树/矿/火山实例更新 */
+function updateInstances(keys, now){
+  const treeArr = [], oreArr = [], volcArr = [];
+  for(const k of keys){
+    const parts = k.split('_');
+    const cx = +parts[0], cy = +parts[1];
+    const ch = getChunk(cx, cy);
+    for(let ty=0; ty<CHUNK; ty++) for(let tx=0; tx<CHUNK; tx++){
+      const wx = cx*CHUNK+tx, wz = cy*CHUNK+ty;
+      if(ch.tiles[ty*CHUNK+tx] === T_FOREST && hash2(wx, wz, 99) < 0.42) treeArr.push([wx, wz]);
+    }
+    for(const o of ch.ores) if(o.spawnable) oreArr.push({wx: cx*CHUNK+o.tx, wz: cy*CHUNK+o.ty, mat: o.mat});
+    for(const v of ch.volcano) volcArr.push([cx*CHUNK+v.tx, cy*CHUNK+v.ty]);
+  }
+  treeMesh.count = Math.min(treeArr.length, MAX_TREES);
+  for(let i=0; i<treeMesh.count; i++){
+    const wx = treeArr[i][0], wz = treeArr[i][1];
+    const y = terrainHeight(wx, wz, T_FOREST);
+    dummy.position.set(wx+0.5, y, wz+0.5);
+    dummy.scale.setScalar(0.8 + hash2(wx, wz, 7)*0.5);
+    dummy.rotation.set(0, hash2(wx, wz, 13)*6.28, 0);
+    dummy.updateMatrix();
+    treeMesh.setMatrixAt(i, dummy.matrix);
+  }
+  treeMesh.instanceMatrix.needsUpdate = true;
+
+  const bob = Math.sin(now/400);
+  oreMesh.count = Math.min(oreArr.length, MAX_ORES);
+  for(let i=0; i<oreMesh.count; i++){
+    const o = oreArr[i];
+    const fx = Math.floor(o.wx), fz = Math.floor(o.wz);
+    const t = getTileType(fx, fz);
+    const y = terrainHeight(fx, fz, t) + 0.8 + bob*0.16 + hash2(fx, fz, 23)*0.3;
+    dummy.position.set(o.wx+0.5, y, o.wz+0.5);
+    dummy.scale.setScalar(0.9 + hash2(fx, fz, 29)*0.4);
+    dummy.rotation.set(0, now/900, 0);
+    dummy.updateMatrix();
+    oreMesh.setMatrixAt(i, dummy.matrix);
+    oreMesh.setColorAt(i, new THREE.Color(RAW[o.mat].color));
+  }
+  oreMesh.instanceMatrix.needsUpdate = true;
+  if(oreMesh.instanceColor) oreMesh.instanceColor.needsUpdate = true;
+
+  const pulse = 1 + Math.sin(now/300)*0.18;
+  volcMesh.count = Math.min(volcArr.length, MAX_VOLC);
+  for(let i=0; i<volcMesh.count; i++){
+    const wx = volcArr[i][0], wz = volcArr[i][1];
+    const y = terrainHeight(wx, wz, T_MOUNTAIN);
+    dummy.position.set(wx+0.5, y+0.9, wz+0.5);
+    dummy.scale.setScalar(pulse);
+    dummy.updateMatrix();
+    volcMesh.setMatrixAt(i, dummy.matrix);
+  }
+  volcMesh.instanceMatrix.needsUpdate = true;
+}
+
+/* 玩家 + 相机跟随 */
+function updatePlayerCamera(dt, now){
+  const fx = Math.floor(player.x/TILE), fz = Math.floor(player.y/TILE);
+  const t = getTileType(fx, fz);
+  const y = terrainHeight(fx, fz, t) + 0.05;
+  playerGroup.position.set(player.x/TILE+0.5, y, player.y/TILE+0.5);
+  if(player.vx !== 0 || player.vy !== 0){
+    playerGroup.rotation.y = -Math.atan2(player.vy, player.vx) + Math.PI/2;
+  }
+  const moving = Math.hypot(player.vx, player.vy);
+  if(moving > 8){
+    const bob = Math.sin(now/130)*0.07;
+    playerGroup.children[1].position.y = bob; // 头与头发同步浮动，不分离
+    playerGroup.children[2].position.y = bob;
+  }
+  const cxp = player.x/TILE+0.5, czp = player.y/TILE+0.5, cyp = y+2.4;
+  camPos.x += (cxp - camPos.x)*Math.min(1, dt*5);
+  camPos.y += (cyp - camPos.y)*Math.min(1, dt*5);
+  camPos.z += (czp - camPos.z)*Math.min(1, dt*5);
+  const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+  const ox = Math.sin(camYaw)*cp*CAM_DIST;
+  const oy = sp*CAM_DIST;
+  const oz = Math.cos(camYaw)*cp*CAM_DIST;
+  camera.position.set(camPos.x+ox, camPos.y+oy, camPos.z+oz);
+  camera.lookAt(camPos.x, camPos.y-1.6, camPos.z);
+}
+
+/* 粒子上传（3D Points） */
+function syncParticles(){
+  const n = Math.min(particles.length, MAX_PARTICLES);
+  particleGeo.setDrawRange(0, n);
+  const pos = particleGeo.attributes.position.array;
+  const col = particleGeo.attributes.color.array;
+  for(let i=0; i<n; i++){
+    const p = particles[i];
+    pos[i*3] = p.x; pos[i*3+1] = p.y; pos[i*3+2] = p.z;
+    const c = hexRGB(p.color);
+    col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+  particleGeo.attributes.color.needsUpdate = true;
+}
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  CW = window.innerWidth; CH = window.innerHeight;
+  if(renderer){
+    renderer.setPixelRatio(Math.min(DPR, 2));
+    renderer.setSize(CW, CH);
+    camera.aspect = CW/CH;
+    camera.updateProjectionMatrix();
+  }else{
+    canvas.width = Math.round(CW*DPR); canvas.height = Math.round(CH*DPR);
+    canvas.style.width = CW+'px'; canvas.style.height = CH+'px';
+  }
+}
+window.addEventListener('resize', resize);
+
+
+function tileScreen(t){
+  switch(t){
+    case T_GRASS:   return ['#cdd9a5','#c2d09a'];
+    case T_FOREST:  return ['#a9c18d','#9eb482'];
+    case T_DESERT:  return ['#e8d5a5','#e2cd97'];
+    case T_MOUNTAIN:return ['#b7a690','#ad9b82'];
+    case T_SNOW:    return ['#efecdf','#e7e3d3'];
+    case T_SAND:    return ['#e6d2a0','#dec893'];
+    case T_SHALLOW: return ['#bcd3df','#b2cbd8'];
+    case T_DEEP:    return ['#9db8c9','#93aec0'];
+    case T_RIVER:   return ['#a5c8dd','#9abfd6'];
+  }
+}
+
+/* =====================================================
+   主循环
+===================================================== */
+let lastT = 0, threeReady = false, _3dWaitStart = 0, _3dFailShown = false;
+let viewKeys = new Set();
+function frame(now){
+  const dt = Math.min(0.05, (now - lastT)/1000 || 0.016);
+  lastT = now;
+
+  if(!threeReady){
+    if(typeof THREE === 'undefined'){
+      if(!_3dWaitStart) _3dWaitStart = now;
+      if(now - _3dWaitStart > 12000 && !_3dFailShown){
+        _3dFailShown = true;
+        showToast('3D 引擎加载失败，请检查网络后刷新', 4000);
+      }
+      requestAnimationFrame(frame);
+      return;
+    }
+    try{ init3D(); }
+    catch(e){ console.error(e); }
+    threeReady = true;
+    if(!renderer){
+      requestAnimationFrame(frame);
+      return;
+    }
+  }
+
+  const [ix, iy] = inputDir(); // 屏幕方向
+  const spd = CONFIG.playerSpeed * speedFactor(Math.floor(player.x/TILE), Math.floor(player.y/TILE));
+  // 3D 相机斜后方视角：屏幕方向 ≈ 世界方向
+  player.vx += (ix*spd - player.vx) * Math.min(1, dt*10);
+  player.vy += (iy*spd - player.vy) * Math.min(1, dt*10);
+  const nx = player.x + player.vx * dt, ny = player.y + player.vy * dt;
+  if(canStand(Math.floor(nx/TILE), Math.floor(ny/TILE))){
+    player.x = nx; player.y = ny;
+  }
+  if(ix !== 0 || iy !== 0) player.face = ix;
+
+  cam.x += (player.x - cam.x) * Math.min(1, dt*6);
+  cam.y += (player.y - cam.y) * Math.min(1, dt*6);
+
+  syncAcidBtn();
+
+  // 3D 世界更新
+  viewKeys = updateChunks();
+  updateInstances(viewKeys, now);
+  updatePlayerCamera(dt, now);
+  updateBossScene(dt);
+  // 粒子物理（3D：x/z 平面扩散，y 上升后下落）
+  for(let i=particles.length-1; i>=0; i--){
+    const p = particles[i];
+    p.x += p.vx*dt; p.z += p.vz*dt; p.y += p.vy*dt;
+    p.vy -= 5*dt;
+    p.life -= dt;
+    if(p.life <= 0) particles.splice(i, 1);
+  }
+  syncParticles();
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* =====================================================
+   UI 渲染
+===================================================== */
+const $ = id => document.getElementById(id);
+
+function matColor(key){
+  const mi = matInfo(key);
+  return mi ? mi.color : '#8a7f6d';
+}
+function fmtInput(obj){
+  return Object.keys(obj).map(k => {
+    const mi = matInfo(k);
+    const have = inv[k]||0, need = obj[k];
+    const ok = have >= need;
+    return `<b style="color:${matColor(k)}">${mi.sym}</b>×${need}${ok?'':` <span class="lack">(${have})</span>`}`;
+  }).join(' + ');
+}
+function fmtOutput(obj){
+  return Object.keys(obj).map(k => {
+    const mi = matInfo(k);
+    return `<b style="color:${matColor(k)}">${mi.sym}</b>×${obj[k]}`;
+  }).join(' + ');
+}
+function renderInv(){
+  const body = $('inv-body'); body.innerHTML = '';
+  const sec = (title, keys) => {
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="inv-sec">${title}</div><div class="inv-grid"></div>`;
+    body.appendChild(div);
+    const grid = div.querySelector('.inv-grid');
+    keys.forEach(k => {
+      const mi = matInfo(k); if(!mi) return;
+      const n = inv[k]||0;
+      const cell = document.createElement('div');
+      cell.className = 'inv-cell' + (n===0 ? ' empty' : '');
+      cell.innerHTML = `<div class="sym ${mi.type==='原料'?'raw':''}" style="background:${mi.color}">${mi.sym}</div>
+        <div class="nm">${mi.name}</div><div class="ct">${n}</div>`;
+      grid.appendChild(cell);
+    });
+  };
+  sec('原料（世界采集）', Object.keys(RAW));
+  sec('中间物（加工产物）', Object.keys(MID));
+  sec('元素（提炼获得）', Object.keys(ELEMENTS));
+  // 工具区（只显示已拥有）
+  const toolKeys = Object.keys(TOOLS).filter(k=>tools[k]);
+  if(toolKeys.length){
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="inv-sec">工具（制造获得）</div><div class="inv-grid"></div>`;
+    body.appendChild(div);
+    const grid = div.querySelector('.inv-grid');
+    toolKeys.forEach(k=>{
+      const T = TOOLS[k];
+      const st = k==='bucketW' ? `耐久 ${tools.bucketW}/${BUCKET_MAX.bucketW}`
+               : k==='bucketI' ? `耐久 ${tools.bucketI}/${BUCKET_MAX.bucketI}`
+               : '已装备';
+      const cell = document.createElement('div');
+      cell.className = 'inv-cell';
+      cell.innerHTML = `<div class="sym raw" style="background:${T.color}">${T.name[0]}</div>
+        <div class="nm">${T.name}</div><div class="ct" style="color:var(--ok);font-size:11px">${st}</div>`;
+      grid.appendChild(cell);
+    });
+  }
+}
+
+let craftTab = 'furnace';
+function renderCraft(){
+  const list = $('craft-list'); list.innerHTML = '';
+  /* 制造 tab：工具 */
+  if(craftTab === 'make'){
+    for(const mk of MAKES){
+      const T = TOOLS[mk.tool];
+      const owned = tools[mk.tool];
+      const can = Object.keys(mk.in).every(k => (inv[k]||0) >= mk.in[k]);
+      const row = document.createElement('div');
+      row.className = 'craft-row';
+      const ingr = Object.keys(mk.in).map(k=>{
+        const mi = matInfo(k);
+        const have = inv[k]||0, need = mk.in[k];
+        const ok = have >= need;
+        return `<b style="color:${matColor(k)}">${mi.sym}</b>×${need}${ok?'':` <span class="lack">(${have})</span>`}`;
+      }).join(' + ');
+      row.innerHTML = `
+        <div class="prod"><div class="psym" style="background:${T.color}">${T.name[0]}</div>
+          <div class="pnm">${T.name}</div></div>
+        <div class="ingr"><b style="color:var(--ink)">${mk.name}</b><br>
+          ${ingr}<span style="color:var(--ink-soft)"> → </span>${T.name}
+          <span class="hint">${T.desc}</span></div>
+        <button class="btn cbtn ${owned?'ghost':''}" ${owned||!can?'disabled style="opacity:.45"':''}>${owned?'已拥有':'制造'}</button>`;
+      if(!owned && can){
+        row.querySelector('.cbtn').addEventListener('click', ()=>{
+          if(applyMake(mk)){
+            sfxCraft(); renderCraft(); renderInv(); saveGame();
+            showToast(`制造成功：<b>${T.name}</b>！${T.desc}`, 2400);
+          }
+        });
+      }
+      list.appendChild(row);
+    }
+    return;
+  }
+  const src = craftTab === 'furnace' ? FURNACE : craftTab === 'electro' ? ELECTRO : REACT;
+  for(const rc of src){
+    const can = Object.keys(rc.in).every(k => (inv[k]||0) >= rc.in[k]);
+    const row = document.createElement('div');
+    row.className = 'craft-row';
+    const outs = Object.keys(rc.out);
+    const allFound = outs.every(k => discovered.has(k));
+    row.innerHTML = `
+      <div class="prod"><div class="psym" style="background:${matColor(outs[0])}">${matInfo(outs[0]).sym}</div>
+        <div class="pnm">${outs.map(k=>matInfo(k).name).join('+')}</div></div>
+      <div class="ingr"><b style="color:var(--ink)">${rc.name}</b>${rc.cond ? ' <span class="cond">需条件</span>' : ''}${allFound ? ' <span class="cond">图鉴已收录</span>' : ''}<br>
+        ${fmtInput(rc.in)}<span style="color:var(--ink-soft)"> → </span>${fmtOutput(rc.out)}
+        ${rc.hint ? `<span class="hint">${rc.hint}</span>` : ''}</div>
+      <button class="btn cbtn" ${!can?'disabled style="opacity:.45"':''}>加工</button>`;
+    row.querySelector('.cbtn').addEventListener('click', ()=>{
+      const names = applyRecipe(rc);
+      if(names){
+        sfxCraft(); renderCraft(); renderInv(); renderBesti();
+        updateHud(); saveGame();
+        showToast(`加工成功：<b>${names.join('、')}</b>${rc.cond?'　<span style="color:#a9711f">（反应需条件）</span>':''}`, 2200);
+      }
+    });
+    list.appendChild(row);
+  }
+}
+
+function renderBesti(){
+  const grid = $('besti-grid'); grid.innerHTML = '';
+  const mk = (sym, nm, got, verse) => {
+    const cell = document.createElement('div');
+    cell.className = 'b-cell' + (got ? '' : ' locked');
+    cell.innerHTML = `<div class="sym" style="background:${got?matColor(sym):'#c8bfa8'}">${sym}</div><div class="nm">${got?nm:'？？？'}</div>` +
+      `<div class="verse">${got ? (verse || '') : '尚未现身'}</div>` +
+      (newlyFound.has(sym) ? `<div class="new">新</div>` : '');
+    grid.appendChild(cell);
+  };
+  for(const el in ELEMENTS) mk(el, ELEMENTS[el].name, discovered.has(el), ELEMENTS[el].poem);
+  for(const c of COMPOUNDS) mk(c.sym, c.name, discovered.has(c.sym), '');
+  const cnt = discovered.size;
+  $('b-count').textContent = cnt + '/' + BESTI_TOTAL;
+  $('b-bar').style.width = Math.round(cnt/BESTI_TOTAL*100) + '%';
+  $('b-pct').textContent = Math.round(cnt/BESTI_TOTAL*100) + '%';
+}
+function updateHud(){
+  $('hud-besti').textContent = discovered.size;
+}
+
+/* ===== 存档管理 ===== */
+function currentSaveObj(){
+  return { v: SAVE_VER, x: player.x, y: player.y,
+    inv, disc: [...discovered], tools, seed: SEED, t: Date.now() };
+}
+function renderSaveInfo(){
+  const b = discovered.size;
+  const ts = [
+    tools.cart?'小车':'', tools.boat?'小船':'', tools.spade?'木铲':'', tools.bottle?'玻璃瓶':'',
+    tools.bucketW?`木桶(${tools.bucketW})`:'', tools.bucketI?`铁桶(${tools.bucketI})`:''
+  ].filter(Boolean).join('、') || '无';
+  const tx = Math.floor(player.x/TILE), ty = Math.floor(player.y/TILE);
+  let savedAt = '—';
+  try{
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if(s && s.t){ savedAt = new Date(s.t).toLocaleString('zh-CN',{hour12:false}); }
+  }catch(e){}
+  $('save-info').innerHTML =
+    `<div class="srow"><span>种子</span><b>${SEED}</b></div>` +
+    `<div class="srow"><span>坐标</span><b>${tx}, ${ty}</b></div>` +
+    `<div class="srow"><span>图鉴</span><b>${b} / ${BESTI_TOTAL}</b></div>` +
+    `<div class="srow"><span>工具</span><b>${ts}</b></div>` +
+    `<div class="srow"><span>保存于</span><b>${savedAt}</b></div>`;
+}
+function openSaveModal(){
+  const ta = $('save-code');
+  ta.style.display = 'block'; ta.value = ''; ta.readOnly = true;
+  $('btn-save-apply').style.display = 'none';
+  renderSaveInfo();
+  showModal('save-modal', true);
+}
+(function saveManager(){
+  const ta = () => $('save-code');
+  $('btn-save').addEventListener('click', openSaveModal);
+  $('btn-save-export').addEventListener('click', ()=>{
+    const code = JSON.stringify(currentSaveObj());
+    const el = ta(); el.style.display = 'block'; el.value = code; el.readOnly = false; el.select();
+    try{ navigator.clipboard.writeText(code); showToast('存档已复制到剪贴板', 2000); }
+    catch(e){ showToast('存档已生成，请手动复制', 2000); }
+  });
+  $('btn-save-import').addEventListener('click', ()=>{
+    const el = ta(); el.style.display = 'block'; el.value = ''; el.readOnly = false; el.focus();
+    $('btn-save-apply').style.display = 'block';
+    showToast('粘贴存档内容后，点「应用导入」', 2400);
+  });
+  $('btn-save-apply').addEventListener('click', ()=>{
+    try{
+      const s = JSON.parse(ta().value);
+      if(!s || typeof s !== 'object' || !s.inv) throw new Error('bad');
+      suppressSave = true;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+      showToast('存档已导入，正在重启…', 2000);
+      setTimeout(()=>location.reload(), 600);
+    }catch(e){ showToast('存档格式无效，请检查内容', 2400); }
+  });
+  $('btn-save-reset').addEventListener('click', ()=>{
+    if(confirm('确定重置存档？将清空当前全部进度，重新开始。')){
+      suppressSave = true;
+      localStorage.removeItem(SAVE_KEY);
+      showToast('存档已重置，正在重启…', 2000);
+      setTimeout(()=>location.reload(), 600);
+    }
+  });
+})();
+
+function showModal(id, show){
+  $(id).style.display = show ? 'flex' : 'none';
+  if(show){
+    if(id === 'inv-modal') renderInv();
+    if(id === 'craft-modal') renderCraft();
+    if(id === 'besti-modal'){ renderBesti(); newlyFound.clear(); }
+  }
+}
+
+/* =====================================================
+   元素之心（boss）交互
+===================================================== */
+function guardsAlive(){ return guards.filter(g => !g.dead).length; }
+function towerDist(){ return Math.hypot((towerX+0.5) - player.x/TILE, (towerY+0.5) - player.y/TILE); }
+function nearTower(){ return towerDist() < 3.2; }
+function nearGuard(){
+  let best = null, bd = 2.8*2.8;
+  guards.forEach((g, i) => {
+    if(g.dead) return;
+    const offs = [[-3.2,0],[3.2,0],[0,-3.2],[0,3.2]][i];
+    const gx = towerX + offs[0], gy = towerY + offs[1];
+    const d = (player.x/TILE - gx)**2 + (player.y/TILE - gy)**2;
+    if(d < bd){ bd = d; best = g; }
+  });
+  return best;
+}
+function primaryAction(){
+  const g = nearGuard();
+  if(g) return attackGuard(g);
+  if(nearTower()){
+    if(bossPhase >= 2){
+      if(!tools.rocket){ showToast('还差一艘船：集齐元素，在加工台「组装火箭」', 2800); return; }
+      if(lockIdx >= LOCKS.length && igniteT === 0){ igniteRocket(); return; }
+      showToast('元素之心在等你解码', 2000); return;
+    }
+    if(bossPhase === 1){
+      startLock(); return;
+    }
+    if(guardsAlive() > 0){ showToast(`元素之心的守卫还守着塔：${guardsAlive()}/4 仍在`, 2200); return; }
+    bossPhase = 1; saveGame(); updateGoal();
+    showToast('守卫尽数倒下——元素之心浮出水面，按 E 解码', 2800);
+    return;
+  }
+  pickNearby();
+}
+function attackGuard(g){
+  const need = g.weak;
+  if((inv[need]||0) < 1){
+    showToast(`<b>${g.name}</b>：${g.poem}`, 2600);
+    return;
+  }
+  inv[need] -= 1;
+  g.hp -= 2;
+  renderInv(); sfxPick();
+  saveGame();
+  if(g.hp <= 0){
+    g.dead = true;
+    const dead = guards.filter(x=>x.dead).length;
+    showToast(`<b>${g.name}</b>败了！（${dead}/4）`, 2600);
+    if(dead === 4){ bossPhase = 1; saveGame(); updateGoal(); showToast('守卫尽数倒下——元素之心浮出水面，按 E 解码', 2800); }
+  } else {
+    showToast(`<b>${g.name}</b>受创！还差 ${Math.ceil(g.hp/2)} 次`, 1800);
+  }
+  updateGoal();
+}
+/* 元素锁解码 */
+function startLock(){
+  if(lockIdx >= LOCKS.length) return;
+  renderLock(); showModal('lock-modal', true);
+}
+function renderLock(){
+  const total = LOCKS.length;
+  $('lock-progress').innerHTML = `<span>锁 ${lockIdx}/${total}</span><div class="lock-bar"><i style="width:${Math.round(lockIdx/total*100)}%"></i></div>`;
+  const q = LOCKS[lockIdx];
+  $('lock-poem').innerHTML = `<span class="who">诗 · 第 ${lockIdx+1} 号</span>${q.poem}`;
+  const opts = $('lock-opts'); opts.innerHTML = '';
+  const wrong = Object.keys(ELEMENTS).filter(el => el !== q.el).sort(() => Math.random()-0.5).slice(0, 3);
+  const choices = [q.el, ...wrong].sort(() => Math.random()-0.5);
+  choices.forEach(el => {
+    const b = document.createElement('button');
+    b.className = 'lock-opt';
+    b.innerHTML = `<span class="ls" style="color:${ELEMENTS[el].color}">${el}</span><span class="ln">${ELEMENTS[el].name}</span>`;
+    b.onclick = () => lockAnswer(el, q);
+    opts.appendChild(b);
+  });
+}
+function lockAnswer(el, q){
+  if(el === q.el){
+    if((inv[q.el]||0) < 1){ showToast(`你需要一份<b>${q.name}</b>才能投入元素之心`, 2400); return; }
+    inv[q.el] -= 1;
+    lockIdx++; renderInv(); saveGame();
+    if(lockIdx >= LOCKS.length){
+      bossPhase = 2; saveGame(); updateGoal();
+      showModal('lock-modal', false);
+      showToast('十三道锁尽数解开！元素之心开始共鸣——带着火箭来点火吧', 3200);
+    } else {
+      renderLock();
+      showToast(`第 ${lockIdx}/${LOCKS.length} 道锁解开`, 1600);
+    }
+  } else {
+    const own = Object.keys(ELEMENTS).filter(el => (inv[el]||0) > 0);
+    if(own.length){
+      const lost = own[Math.floor(Math.random()*own.length)];
+      inv[lost]--;
+      showToast(`酸雾袭来！损失了一点<b>${ELEMENTS[lost].name}</b>`, 2200);
+    } else {
+      showToast('酸雾袭来！幸好你没有元素可损失…', 1800);
+    }
+    renderInv(); saveGame();
+  }
+  updateGoal();
+}
+/* 点火 + 通关 */
+function igniteRocket(){
+  igniteT = 1;
+  bossPhase = 3; saveGame();
+  rocketMesh.visible = true;
+  rocketMesh.position.set(towerX + 0.5, 12, towerY + 0.5);
+  showToast('点火！火箭升空——', 2200);
+}
+function showWin(){
+  if(winShown) return;
+  winShown = true; saveGame();
+  showModal('win-modal', true);
+  const lines = Array.from(document.querySelectorAll('#win-story .story-line'));
+  const go = $('win-go');
+  let si = 0;
+  const t = setInterval(()=>{
+    if(si < lines.length){ lines[si].classList.add('show'); si++; }
+    else { clearInterval(t); go.style.display = 'flex'; }
+  }, 1100);
+}
+function updateBossScene(dt){
+  // 守卫贴地形 + 死亡隐藏
+  guards.forEach((g, i) => {
+    const m = guardMeshes[i]; if(!m) return;
+    if(g.dead){ m.visible = false; return; }
+    const offs = [[-3.2,0],[3.2,0],[0,-3.2],[0,3.2]][i];
+    const gx = Math.floor(towerX + offs[0]), gy = Math.floor(towerY + offs[1]);
+    m.position.y = terrainHeight(gx, gy, getTileType(gx, gy)) + 0.6;
+    m.rotation.y += 0.02;
+  });
+  // 元素之心核心颜色随阶段变化
+  if(coreMesh){
+    coreMesh.material.color.setHex(bossPhase >= 2 ? 0xe8b04a : (guardsAlive() === 0 ? 0x8fd0a8 : 0x6fb6e0));
+  }
+  // 火箭：解锁后显示在塔顶，待点火
+  if(tools.rocket && igniteT === 0 && bossPhase >= 2 && !winShown){
+    rocketMesh.visible = true;
+    rocketMesh.position.set(towerX + 0.5, 11.9, towerY + 0.5);
+  } else if(igniteT === 0){
+    rocketMesh.visible = false;
+  }
+  // 点火动画
+  if(igniteT > 0){
+    igniteT += dt;
+    rocketMesh.position.y += 0.24*60*dt;
+    if(Math.random() < 0.55) particles.push({x:rocketMesh.position.x + (Math.random()-0.5)*0.3, z:rocketMesh.position.z + (Math.random()-0.5)*0.3, y:rocketMesh.position.y - 0.8, vx:(Math.random()-0.5)*1.2, vz:(Math.random()-0.5)*1.2, vy:1.5+Math.random(), life:0.6, max:0.6, color:'#e8b04a'});
+    if(Math.random() < 0.4) particles.push({x:rocketMesh.position.x + (Math.random()-0.5)*0.4, z:rocketMesh.position.z + (Math.random()-0.5)*0.4, y:rocketMesh.position.y - 0.5, vx:(Math.random()-0.5)*1.5, vz:(Math.random()-0.5)*1.5, vy:2.5+Math.random(), life:0.6, max:0.6, color:'#d8d8e8'});
+    if(igniteT >= 3.2){ igniteT = 0; showWin(); }
+  }
+  updateGoal();
+}
+function updateGoal(){
+  const el = $('hud-goal');
+  if(bossPhase >= 3 && winShown){ el.style.display = 'none'; return; }
+  if(bossPhase >= 2 && lockIdx >= LOCKS.length && tools.rocket && igniteT === 0 && !winShown){
+    el.innerHTML = '元素之心 <b>待点火</b>（按 E）';
+    el.style.display = 'block'; return;
+  }
+  const dx = (towerX + 0.5) - player.x/TILE, dy = (towerY + 0.5) - player.y/TILE;
+  const d = Math.max(Math.abs(dx), Math.abs(dy));
+  if(d > 4){
+    const dir = (Math.abs(dx) >= Math.abs(dy)) ? (dx > 0 ? '东' : '西') : (dy > 0 ? '南' : '北');
+    el.innerHTML = `元素之心 → ${dir} ${Math.round(d)} 格`;
+  } else {
+    el.innerHTML = '元素之心 <b>就在眼前</b>';
+  }
+  el.style.display = 'block';
+}
+
+/* =====================================================
+   事件绑定
+===================================================== */
+window.addEventListener('keydown', e=>{
+  keys[e.code] = true;
+  if(e.code === 'KeyE') primaryAction();
+  if(e.code === 'KeyB') showModal('craft-modal', true);
+  if(e.code === 'KeyJ') showModal('besti-modal', true);
+  if(e.code === 'KeyQ') pourAcid();
+});
+window.addEventListener('keyup', e=>{ keys[e.code] = false; });
+window.addEventListener('blur', ()=>{ for(const k in keys) keys[k] = false; });
+
+/* 拖拽旋转视角（桌面鼠标 + 移动端单指） */
+let dragRot = null;
+const gameCanvas = $('game');
+gameCanvas.addEventListener('pointerdown', e=>{
+  if(e.pointerType !== 'mouse' || e.button !== 0) return;
+  dragRot = { id:e.pointerId, x:e.clientX, y:e.clientY };
+  gameCanvas.setPointerCapture(e.pointerId);
+});
+gameCanvas.addEventListener('pointermove', e=>{
+  if(dragRot && e.pointerId === dragRot.id){
+    camYaw += (e.clientX - dragRot.x)*0.006;
+    camPitch = Math.min(CAM_MAX_P, Math.max(CAM_MIN_P, camPitch + (e.clientY - dragRot.y)*0.005));
+    dragRot.x = e.clientX; dragRot.y = e.clientY;
+  }
+});
+gameCanvas.addEventListener('pointerup', e=>{ if(dragRot && e.pointerId === dragRot.id) dragRot = null; });
+gameCanvas.addEventListener('pointercancel', e=>{ if(dragRot && e.pointerId === dragRot.id) dragRot = null; });
+gameCanvas.addEventListener('touchstart', e=>{
+  if(dragRot) return;
+  const t = e.changedTouches[0];
+  dragRot = { id:t.identifier, x:t.clientX, y:t.clientY };
+}, {passive:true});
+gameCanvas.addEventListener('touchmove', e=>{
+  if(!dragRot) return;
+  for(const t of e.changedTouches){
+    if(t.identifier === dragRot.id){
+      camYaw += (t.clientX - dragRot.x)*0.006;
+      camPitch = Math.min(CAM_MAX_P, Math.max(CAM_MIN_P, camPitch + (t.clientY - dragRot.y)*0.005));
+      dragRot.x = t.clientX; dragRot.y = t.clientY;
+    }
+  }
+}, {passive:true});
+gameCanvas.addEventListener('touchend', e=>{
+  for(const t of e.changedTouches){ if(t.identifier === dragRot?.id) dragRot = null; }
+});
+gameCanvas.addEventListener('touchcancel', ()=>{ dragRot = null; });
+
+$('btn-start').addEventListener('click', ()=>{
+  $('start').style.display = 'none';
+  requestAnimationFrame(frame);
+});
+$('btn-inv').addEventListener('click', ()=>showModal('inv-modal', true));
+$('btn-craft').addEventListener('click', ()=>showModal('craft-modal', true));
+$('btn-best').addEventListener('click', ()=>showModal('besti-modal', true));
+$('btn-acid').addEventListener('click', ()=>pourAcid());
+$('btn-pick').addEventListener('click', ()=>primaryAction());
+$('btn-win-continue').addEventListener('click', ()=>showModal('win-modal', false));
+$('btn-help').addEventListener('click', ()=>showModal('help-modal', true));
+
+/* 开场情景播放：逐条浮现，可跳过 */
+(function playStory(){
+  const lines = Array.from(document.querySelectorAll('#story .story-line'));
+  const go = $('go-wrap');
+  let si = 0, timer = null;
+  const showAll = ()=>{
+    if(timer){ clearInterval(timer); timer = null; }
+    lines.forEach(l => l.classList.add('show'));
+    go.classList.add('show');
+  };
+  timer = setInterval(()=>{
+    if(si < lines.length){ lines[si].classList.add('show'); si++; }
+    else showAll();
+  }, 1150);
+  $('btn-skip').addEventListener('click', showAll);
+  const card = $('start-card');
+  card.addEventListener('click', e=>{
+    if(e.target && e.target.closest && !e.target.closest('#btn-start, #btn-skip')) showAll();
+  });
+})();
+document.querySelectorAll('.close').forEach(b=>{
+  b.addEventListener('click', ()=>showModal(b.dataset.close, false));
+});
+document.querySelectorAll('.modal-mask').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target === m && m.id !== 'start') m.style.display = 'none'; });
+});
+document.querySelectorAll('.ctab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.ctab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    craftTab = t.dataset.tab;
+    renderCraft();
+  });
+});
+
+// 虚拟摇杆（触屏）
+const stickWrap = $('stick-wrap'), stickEl = $('stick');
+let stickTouch = null;
+function setupStick(){
+  if(!('ontouchstart' in window)) return;
+  stickWrap.style.display = 'block';
+  const R = 44;
+  stickWrap.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    stickTouch = {id: t.identifier};
+    stick.active = true;
+  }, {passive:false});
+  stickWrap.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      if(stickTouch && t.identifier === stickTouch.id){
+        const r = stickWrap.getBoundingClientRect();
+        const ox = t.clientX - (r.left + r.width/2);
+        const oy = t.clientY - (r.top + r.height/2);
+        const len = Math.hypot(ox, oy);
+        const cl = Math.min(len, R);
+        const ang = len > 0.01 ? Math.atan2(oy, ox) : 0;
+        stick.dx = Math.cos(ang)*cl/R; stick.dy = Math.sin(ang)*cl/R;
+        stickEl.style.transform = `translate(${-26+Math.cos(ang)*cl}px, ${-26+Math.sin(ang)*cl}px)`;
+      }
+    }
+  }, {passive:false});
+  const endStick = e=>{
+    for(const t of e.changedTouches){
+      if(stickTouch && t.identifier === stickTouch.id){
+        stickTouch = null; stick.active = false; stick.dx = 0; stick.dy = 0;
+        stickEl.style.transform = 'translate(-50%,-50%)';
+      }
+    }
+  };
+  stickWrap.addEventListener('touchend', endStick);
+  stickWrap.addEventListener('touchcancel', endStick);
+}
+setupStick();
+
+window.addEventListener('beforeunload', saveGame);
+setInterval(saveGame, 5000);
+
+/* =====================================================
+   初始化
+===================================================== */
+resize();
+if(!loadGame()){
+  spawnPlayer();
+  try{ if(localStorage.getItem(SAVE_KEY)) setTimeout(()=>showToast('检测到旧版本存档，已忽略，从新开始', 2600), 800); }catch(e){}
+}
+else getChunk(Math.floor(player.x/CHUNK_PX), Math.floor(player.y/CHUNK_PX));
+cam.x = player.x; cam.y = player.y;
+updateHud();
+renderBesti();
+syncAcidBtn();
+updateGoal();
+newlyFound.clear();
+</script>
+</body>
+</html>
