@@ -41,35 +41,38 @@ async function handleGet(env, url) {
   const page = Math.max(1, parseInt(url.searchParams.get('cursor') || '1', 10) || 1);
   const pageSize = Math.min(20, parseInt(url.searchParams.get('pageSize') || '4', 10) || 4);
 
-  const res = await fetch(
-    `${API_BASE}/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=all&labels=${LABEL_ALL}&per_page=${pageSize}&page=${page}`,
-    ghHeaders(env)
-  );
-  if (!res.ok) throw new Error(`GitHub 读取失败 (${res.status})`);
-  const issues = await res.json();
+  // 拉取最近的 issues（含 open/closed），在内存中按反馈模板特征过滤。
+  // 不依赖 labels：fine-grained PAT 的标签写操作需要 Administration 权限，
+  // 部分令牌无法在创建时附标签，因此用 body 特征过滤更稳（与标签过滤结果一致）。
+  // 最多翻 5 页（500 条），覆盖个人站点量级。
+  let all = [];
+  for (let p = 1; p <= 5; p++) {
+    const res = await fetch(
+      `${API_BASE}/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=all&per_page=100&page=${p}&sort=created&direction=desc`,
+      ghHeaders(env)
+    );
+    if (!res.ok) throw new Error(`GitHub 读取失败 (${res.status})`);
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all = all.concat(batch.filter(isFeedbackIssue));
+    if (batch.length < 100) break;
+  }
 
-  const messages = issues.map(issueToMessage);
+  const start = (page - 1) * pageSize;
+  const messages = all.slice(start, start + pageSize).map(issueToMessage);
   return json({
     messages,
-    nextCursor: messages.length === pageSize ? page + 1 : null,
-    hasMore: messages.length === pageSize,
-    total: await fetchTotal(env)
+    nextCursor: start + messages.length < all.length ? page + 1 : null,
+    hasMore: start + messages.length < all.length,
+    total: all.length
   });
 }
 
-async function fetchTotal(env) {
-  // 用 search API 数总数（issues 接口不直接给按标签统计的总数）
-  try {
-    const res = await fetch(
-      `${API_BASE}/search/issues?q=repo:${env.GITHUB_OWNER}/${env.GITHUB_REPO}+label:${LABEL_ALL}&per_page=1`,
-      ghHeaders(env)
-    );
-    if (res.ok) {
-      const data = await res.json();
-      return data.total_count ?? 0;
-    }
-  } catch (e) { /* 忽略，返回 0 */ }
-  return 0;
+// 判断是否为反馈 Issue：body 含反馈模板的特征字段（排除普通 Issue）
+function isFeedbackIssue(issue) {
+  if (!issue || issue.pull_request) return false;
+  const body = issue.body || '';
+  return body.includes('### 反馈内容') || body.includes('### 昵称');
 }
 
 function issueToMessage(issue) {
